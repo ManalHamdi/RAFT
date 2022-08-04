@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import datasets
 from utils import flow_viz
 from utils import frame_utils
+import core.sequence_handling_utils as seq_utils
 
 from raft import RAFT
 from utils.utils import InputPadder, forward_interpolate
@@ -125,6 +126,43 @@ def validate_sintel(model, iters=32):
         results[dstype] = np.mean(epe_list)
 
     return results
+def disimilarity_loss(image_batch, template_batch, flow_predictions, gamma):
+    '''
+    image1_batch: [B, N, H, W]
+    template: [B, N, H, W]
+    flow_predictions: list len iters, type tensor [B, N, 2, H, W]
+    '''
+    partial_loss = 0
+    total_iter = len(flow_predictions)
+    for itr in range(0, total_iter):
+        warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[itr]) # [B, N, H, W]
+        mse_loss = torch.nn.MSELoss(reduction='mean')
+        similarity = mse_loss(warped_img_batch, template_batch) # [B, N]  disimililarity of batch in iteration i
+        partial_loss += similarity * gamma ** (total_iter - itr - 1)
+        
+    return partial_loss / total_iter
+
+@torch.no_grad()
+def validate_acdc(model, gamma, iters=2):
+    ''' Perform validation using ACDC processed dataset '''
+    model.eval()
+    val_dataset = datasets.ACDCDataset(folder_path='/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/validation', mode='validation')
+    out_list = []
+    total_loss = 0
+    for val_id in range(len(val_dataset)):
+        image_batch, template_batch = val_dataset[val_id]
+        image_batch = image_batch[None].cuda()
+        template_batch = template_batch[None].cuda()
+
+        #padder = InputPadder(image_batch.shape, mode='acdc')
+        #image_batch, template_batch = padder.pad(image_batch, template_batch)
+
+        flow_predictions = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
+        loss = disimilarity_loss(image_batch, template_batch, flow_predictions, gamma) # -- loss in batch
+        total_loss += loss
+    print("Validation ACDC: %f" % (total_loss))
+    return {'acdc': total_loss}
+    
 
 
 @torch.no_grad()

@@ -1,0 +1,10 @@
+patient003/patient003_frame01_gt.nii.gz patient003/patient003_frame15_gt.nii.gz patient003/patient003_4d.nii.gz
+patient004/patient004_frame01_gt.nii.gz patient004/patient004_frame15_gt.nii.gz patient004/patient004_4d.nii.gz
+patient023/patient023_frame01_gt.nii.gz patient023/patient023_frame09_gt.nii.gz patient023/patient023_4d.nii.gz
+patient024/patient024_frame01_gt.nii.gz patient024/patient024_frame09_gt.nii.gz patient024/patient024_4d.nii.gz
+patient043/patient043_frame01_gt.nii.gz patient043/patient043_frame07_gt.nii.gz patient043/patient043_4d.nii.gz
+patient044/patient044_frame01_gt.nii.gz patient044/patient044_frame11_gt.nii.gz patient044/patient044_4d.nii.gz
+patient063/patient063_frame01_gt.nii.gz patient063/patient063_frame16_gt.nii.gz patient063/patient063_4d.nii.gz
+patient064/patient064_frame01_gt.nii.gz patient064/patient064_frame12_gt.nii.gz patient064/patient064_4d.nii.gz
+patient083/patient083_frame01_gt.nii.gz patient083/patient083_frame08_gt.nii.gz patient083/patient083_4d.nii.gz
+patient084/patient084_frame01_gt.nii.gz patient084/patient084_frame10_gt.nii.gz patient084/patient084_4d.nii.gz

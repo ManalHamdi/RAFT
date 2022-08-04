@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from raft import RAFT
 import evaluate
 import datasets
-
+import core.sequence_handling_utils as seq_utils
 from torch.utils.tensorboard import SummaryWriter
 
 try:
@@ -42,8 +42,7 @@ except:
 MAX_FLOW = 400
 SUM_FREQ = 100
 VAL_FREQ = 5000
-
-
+    
 def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
     """ Loss function defined over sequence of flow predictions """
 
@@ -71,6 +70,21 @@ def sequence_loss(flow_preds, flow_gt, valid, gamma=0.8, max_flow=MAX_FLOW):
 
     return flow_loss, metrics
 
+def disimilarity_loss(image_batch, template_batch, flow_predictions, gamma):
+    '''
+    image1_batch: [B, N, H, W]
+    template: [B, N, H, W]
+    flow_predictions: list len iters, type tensor [B, N, 2, H, W]
+    '''
+    partial_loss = 0
+    total_iter = len(flow_predictions)
+    for itr in range(0, total_iter):
+        warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[itr]) # [B, N, H, W]
+        mse_loss = torch.nn.MSELoss(reduction='mean')
+        similarity = mse_loss(warped_img_batch, template_batch) # [B, N]  disimililarity of batch in iteration i
+        partial_loss += similarity * gamma ** (total_iter - itr - 1)
+        
+    return partial_loss / total_iter
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -92,7 +106,7 @@ class Logger:
         self.scheduler = scheduler
         self.total_steps = 0
         self.running_loss = {}
-        self.writer = None
+        self.writer = SummaryWriter()
 
     def _print_training_status(self):
         metrics_data = [self.running_loss[k]/SUM_FREQ for k in sorted(self.running_loss.keys())]
@@ -108,7 +122,13 @@ class Logger:
         for k in self.running_loss:
             self.writer.add_scalar(k, self.running_loss[k]/SUM_FREQ, self.total_steps)
             self.running_loss[k] = 0.0
-
+            
+    def add_image(self, description, image):
+        self.writer.add_image(description, image.view(1, image.shape[0], image.shape[1]))
+        
+    def add_scalar(self, description, x, y):
+        self.writer.add_scalar(description, x, y)
+        
     def push(self, metrics):
         self.total_steps += 1
 
@@ -134,6 +154,7 @@ class Logger:
 
 
 def train(args):
+
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
 
@@ -153,7 +174,7 @@ def train(args):
     scaler = GradScaler(enabled=args.mixed_precision)
     logger = Logger(model, scheduler)
 
-    VAL_FREQ = 5000
+    VAL_FREQ = 10 #5000
     add_noise = True
 
     should_keep_training = True
@@ -161,17 +182,17 @@ def train(args):
 
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image1, image2, flow, valid = [x.cuda() for x in data_blob]
-
+            image_batch, template_batch = [x.cuda() for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
-                image1 = (image1 + stdv * torch.randn(*image1.shape).cuda()).clamp(0.0, 255.0)
-                image2 = (image2 + stdv * torch.randn(*image2.shape).cuda()).clamp(0.0, 255.0)
+                image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).cuda()).clamp(0.0, 255.0)
+                template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).cuda()).clamp(0.0, 255.0)
 
-            flow_predictions = model(image1, image2, iters=args.iters)            
-
-            loss, metrics = sequence_loss(flow_predictions, flow, valid, args.gamma)
-            print("Type of loss is ", type(loss), "and shape", loss.shape, "and loss ", loss)
+            flow_predictions = model(image_batch, template_batch, iters=args.iters) 
+            # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
+            loss = disimilarity_loss(image_batch, template_batch, flow_predictions, args.gamma) # -- loss in batch
+            
+            #loss, metrics = sequence_loss(flow_predictions, flow, valid, args.gamma)
             scaler.scale(loss).backward()
             scaler.unscale_(optimizer)                
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
@@ -179,10 +200,8 @@ def train(args):
             scaler.step(optimizer)
             scheduler.step()
             scaler.update()
-
-            logger.push(metrics)
-
-            if total_steps % VAL_FREQ == VAL_FREQ - 1:
+            logger.add_scalar("Training Loss Per Epoch", loss, total_steps)
+            if total_steps % VAL_FREQ == 5:
                 PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
                 torch.save(model.state_dict(), PATH)
 
@@ -194,20 +213,30 @@ def train(args):
                         results.update(evaluate.validate_sintel(model.module))
                     elif val_dataset == 'kitti':
                         results.update(evaluate.validate_kitti(model.module))
+                    elif val_dataset == 'acdc':
+                        results.update(evaluate.validate_acdc(model.module, args.gamma))
 
                 logger.write_dict(results)
+                logger.add_scalar("Training Loss Per Epoch", results['acdc'], total_steps)
+                logger.add_image('Epoch '+ str(total_steps)+'(val)'+'batch'+str(i_batch)
+                                +'Original Image', image_batch[0,4,:,:]) # Display 4th image from first seq in batch i_batch
+                logger.add_image('Epoch '+ str(total_steps)+'(val)'+'batch'+str(i_batch)
+                                +'Template', template_batch[0,0,:,:]) # Display 4th image from first seq in batch i_batch
                 
+                warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[len(flow_predictions)-1]) # [B, N, H, W]
+                logger.add_image('Epoch '+ str(total_steps)+'(val)'+'batch'+str(i_batch)
+                                +'Warped Image', warped_img_batch[:,:,0,0]) # Display 4th warped image with last flow from first seq in batch i_batch
                 model.train()
                 if args.stage != 'chairs':
                     model.module.freeze_bn()
             
-            total_steps += 1
+            total_steps += 1 # Num of epochs
 
             if total_steps > args.num_steps:
                 should_keep_training = False
                 break
 
-    logger.close()
+    #logger.close()
     PATH = 'checkpoints/%s.pth' % args.name
     torch.save(model.state_dict(), PATH)
 

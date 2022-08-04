@@ -55,6 +55,7 @@ def forward_interpolate(flow):
 
 
 def bilinear_sampler(img, coords, mode='bilinear', mask=False):
+    #img torch.Size([169, 1, 13, 13])  coords [144, 9, 9, 2]
     """ Wrapper for grid_sample, uses pixel coordinates """
     H, W = img.shape[-2:]
     xgrid, ygrid = coords.split([1,1], dim=-1)
@@ -62,7 +63,8 @@ def bilinear_sampler(img, coords, mode='bilinear', mask=False):
     ygrid = 2*ygrid/(H-1) - 1
 
     grid = torch.cat([xgrid, ygrid], dim=-1)
-    img = F.grid_sample(img, grid, align_corners=True)
+    #print("THREE is getting F.grid_sample(img, grid, align_corners=True) img with shape", img.shape, "and grid", grid.shape)
+    img = F.grid_sample(img, grid, align_corners=True) 
 
     if mask:
         mask = (xgrid > -1) & (ygrid > -1) & (xgrid < 1) & (ygrid < 1)

@@ -16,10 +16,11 @@ class CorrBlock:
         self.corr_pyramid = []
 
         # all pairs correlation
-        corr = CorrBlock.corr(fmap1, fmap2)
+        corr = CorrBlock.corr(fmap1, fmap2) #[batch, ht, wd, 1, ht, wd]
 
         batch, h1, w1, dim, h2, w2 = corr.shape
-        corr = corr.reshape(batch*h1*w1, dim, h2, w2)
+        #print("coor BATCH H1 W1", batch,h1,w1, batch*h1*w1)
+        corr = corr.reshape(batch*h1*w1, dim, h2, w2) # [batch*h1*w1, dim, h2, w2]
         
         self.corr_pyramid.append(corr)
         for i in range(self.num_levels-1):
@@ -28,7 +29,7 @@ class CorrBlock:
 
     def __call__(self, coords):
         r = self.radius
-        coords = coords.permute(0, 2, 3, 1)
+        coords = coords.permute(0, 2, 3, 1) #[B, H, W, 2]
         batch, h1, w1, _ = coords.shape
 
         out_pyramid = []
@@ -37,11 +38,11 @@ class CorrBlock:
             dx = torch.linspace(-r, r, 2*r+1, device=coords.device)
             dy = torch.linspace(-r, r, 2*r+1, device=coords.device)
             delta = torch.stack(torch.meshgrid(dy, dx), axis=-1)
-
-            centroid_lvl = coords.reshape(batch*h1*w1, 1, 1, 2) / 2**i
+            #print("coords_lvl BATCH H1 W1", batch,h1,w1, "batch*h1*w1", batch*h1*w1)
+            centroid_lvl = coords.reshape(batch*h1*w1, 1, 1, 2) / 2**i   #[batch*h1*w1, 1, 1, 2]
             delta_lvl = delta.view(1, 2*r+1, 2*r+1, 2)
             coords_lvl = centroid_lvl + delta_lvl
-
+            #print("TWO: bilinear_sampler(corr, coords_lvl) shape of coor is ", corr.shape, "coords_lvl is [batch*h1*w1, 1, 1, 2]", coords_lvl.shape)
             corr = bilinear_sampler(corr, coords_lvl)
             corr = corr.view(batch, h1, w1, -1)
             out_pyramid.append(corr)

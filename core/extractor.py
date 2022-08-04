@@ -132,7 +132,7 @@ class BasicEncoder(nn.Module):
         elif self.norm_fn == 'none':
             self.norm1 = nn.Sequential()
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3)
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3)
         self.relu1 = nn.ReLU(inplace=True)
 
         self.in_planes = 64
@@ -172,8 +172,7 @@ class BasicEncoder(nn.Module):
         if is_list:
             batch_dim = x[0].shape[0]
             x = torch.cat(x, dim=0)
-
-        x = self.conv1(x)
+        x = self.conv1(x.float()) #CHANGED
         x = self.norm1(x)
         x = self.relu1(x)
 
@@ -209,7 +208,7 @@ class SmallEncoder(nn.Module):
         elif self.norm_fn == 'none':
             self.norm1 = nn.Sequential()
 
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=7, stride=2, padding=3)
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=7, stride=2, padding=3) # CHANGED number of channels
         self.relu1 = nn.ReLU(inplace=True)
 
         self.in_planes = 32

@@ -13,7 +13,56 @@ import os.path as osp
 
 from utils import frame_utils
 from utils.augmentor import FlowAugmentor, SparseFlowAugmentor
+import nibabel as nib
+import torchvision as tv
+import sequence_handling_utils as seq_utils
 
+class ACDCDataset(data.Dataset):
+    '''
+    image_paths_file format: 
+    Each line represents a patient
+    img_path tx ty theta s
+    '''
+    def __init__(self, folder_path, mode):
+        self.folder_path = folder_path
+        self.seq_f_list = [f for f in os.listdir(self.folder_path) if osp.isfile(osp.join(self.folder_path, f))] # List of filenames of seqs
+        self.mode = mode
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            # get the start, stop, and step from the slice
+            return [self[ii] for ii in range(*key.indices(len(self)))]
+        elif isinstance(key, int):
+            # handle negative indices
+            if key < 0:
+                key += len(self)
+            if key < 0 or key >= len(self):
+                raise IndexError("The index (%d) is out of range." % key)
+            # get the data from direct index
+            return self.get_item_from_index(key)
+        else:
+            raise TypeError("Invalid argument type.")
+
+    def __len__(self):
+        return len(self.seq_f_list)
+    
+    def image_normalization(self, image, scale=1):
+        return scale * (image - np.min(image)) / (np.max(image) - np.min(image))
+
+    def get_item_from_index(self, index):
+        seq_path = self.seq_f_list[index]
+        seq = nib.load("/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/"+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N]         
+        to_tensor = tv.transforms.ToTensor()
+        seq_tensor = to_tensor(seq) # tensor [N, H, W]
+        seq_tensor = seq_tensor[0:5, :, :] # CHANGE TO GET THE WHOLE SEQ
+        
+        template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
+        seq_length = seq_tensor.shape[0]
+        h = seq_tensor.shape[1]
+        w = seq_tensor.shape[2]
+        template_seq = template.repeat(seq_length, 1, 1)
+        
+        return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8] #[N, H, W], [N, H, W]
 
 class FlowDataset(data.Dataset):
     def __init__(self, aug_params=None, sparse=False):
@@ -183,8 +232,8 @@ class HD1K(FlowDataset):
 
         seq_ix = 0
         while 1:
-            flows = sorted(glob(os.path.join(root, 'hd1k_flow_gt', 'flow_occ/%06d_*.png' % seq_ix)))
-            images = sorted(glob(os.path.join(root, 'hd1k_input', 'image_2/%06d_*.png' % seq_ix)))
+            flows = sorted(glob(osp.path.join(root, 'hd1k_flow_gt', 'flow_occ/%06d_*.png' % seq_ix)))
+            images = sorted(glob(osp.path.join(root, 'hd1k_input', 'image_2/%06d_*.png' % seq_ix)))
 
             if len(flows) == 0:
                 break
@@ -194,8 +243,7 @@ class HD1K(FlowDataset):
                 self.image_list += [ [images[i], images[i+1]] ]
 
             seq_ix += 1
-
-
+        
 def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
     """ Create the data loader for the corresponding trainign set """
 
@@ -226,7 +274,10 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
     elif args.stage == 'kitti':
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
         train_dataset = KITTI(aug_params, split='training')
-
+    elif args.stage == 'acdc':
+        aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
+        train_dataset = ACDCDataset("/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/training", "training")
+        
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 
         pin_memory=False, shuffle=True, num_workers=4, drop_last=True)
 

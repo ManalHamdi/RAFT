@@ -23,9 +23,9 @@ First download the ACDC dataset from this link and create the following structur
  mkdir training/
  mkdir validation/
  mkdir testing/
- cd ../../
+ cd ../../DataPreprocessing/
 ```
-ACDC_Preprocess_Script.py: converts 4D MRI cardiac volumes to temporal sequences.
+ACDC_Preprocess_Script.py: converts 4D MRI cardiac volumes to temporal sequences. --acdc_folder argument takes the full path of the folder where ACDC is stored, --acdc_processed_folder takes the full path of the folder where to store processed dataset (ACDC_processed).
 ```Shell
-python3 DataPreprocessing/ACDC_Preprocess_Script.py
+python3 ACDC_Preprocess_Script.py  --acdc_folder=/home/data/ACDC/ --acdc_processed_folder=/home/kevin/manal/RAFT/datasets/ACDC_processed/
 ```

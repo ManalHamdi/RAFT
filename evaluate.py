@@ -143,10 +143,10 @@ def disimilarity_loss(image_batch, template_batch, flow_predictions, gamma):
     return partial_loss / total_iter
 
 @torch.no_grad()
-def validate_acdc(model, gamma, iters=2):
+def validate_acdc(model, gamma, folder, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     model.eval()
-    val_dataset = datasets.ACDCDataset(folder_path='/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/validation', mode='validation')
+    val_dataset = datasets.ACDCDataset(folder_path=folder, mode='validation')
     out_list = []
     total_loss = 0
     for val_id in range(len(val_dataset)):

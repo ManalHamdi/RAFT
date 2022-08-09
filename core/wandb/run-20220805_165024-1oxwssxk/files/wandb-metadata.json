@@ -1,0 +1,23 @@
+{
+    "os": "Linux-5.8.0-59-generic-x86_64-with-glibc2.31",
+    "python": "3.10.4",
+    "heartbeatAt": "2022-08-05T14:50:29.428011",
+    "startedAt": "2022-08-05T14:50:24.479011",
+    "docker": null,
+    "gpu": "Quadro RTX 8000",
+    "gpu_count": 2,
+    "cpu_count": 48,
+    "cuda": null,
+    "args": null,
+    "state": "running",
+    "program": "RAFT/core/working_notebook.ipynb",
+    "root": "/home/kevin/manal/RAFT",
+    "git": {
+        "remote": "git@github.com:ManalHamdi/RAFT.git",
+        "commit": "d40a537157ba63a529f2a90681477a874e6989ad"
+    },
+    "email": "manal.hamdi@yahoo.fr",
+    "host": "bagger",
+    "username": "kevin",
+    "executable": "/home/kevin/miniconda3/envs/raftkevin/bin/python"
+}

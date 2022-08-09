@@ -151,8 +151,8 @@ def validate_acdc(model, gamma, folder, iters=2):
     total_loss = 0
     for val_id in range(len(val_dataset)):
         image_batch, template_batch = val_dataset[val_id]
-        image_batch = image_batch[None].cuda()
-        template_batch = template_batch[None].cuda()
+        image_batch = image_batch[None].to("cuda:1")
+        template_batch = template_batch[None].to("cuda:1")
 
         #padder = InputPadder(image_batch.shape, mode='acdc')
         #image_batch, template_batch = padder.pad(image_batch, template_batch)
@@ -160,6 +160,7 @@ def validate_acdc(model, gamma, folder, iters=2):
         flow_predictions = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
         loss = disimilarity_loss(image_batch, template_batch, flow_predictions, gamma) # -- loss in batch
         total_loss += loss
+    total_loss /= len(val_dataset)
     print("Validation ACDC: %f" % (total_loss))
     return {'acdc': total_loss}
     

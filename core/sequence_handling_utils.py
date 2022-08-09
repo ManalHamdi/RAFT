@@ -34,8 +34,8 @@ def warp_seq(x, flo):
 
     mask = torch.ones(x.size(), dtype=x.dtype) # [N, H, W]
     if x.is_cuda:
-        grid = grid.cuda()
-        mask = mask.cuda()
+        grid = grid.to("cuda:1")
+        mask = mask.to("cuda:1")
 
     flo = torch.flip(flo, dims=[1])
 

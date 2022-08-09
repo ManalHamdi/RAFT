@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import wandb
 import sys
 sys.path.append('core')
 
@@ -94,7 +95,7 @@ def fetch_optimizer(args, model):
     """ Create the optimizer and learning rate scheduler """
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
 
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, args.num_steps+100,
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=767,
         pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
@@ -124,7 +125,7 @@ class Logger:
             self.running_loss[k] = 0.0
             
     def add_image(self, description, image):
-        self.writer.add_image(description, image.view(1, image.shape[0], image.shape[1]))
+        self.writer.add_image(description, image.view(1, image.shape[0], image.shape[1]), dataformats='CHW')
         
     def add_scalar(self, description, x, y):
         self.writer.add_scalar(description, x, y)
@@ -154,14 +155,14 @@ class Logger:
 
 
 def train(args):
-
+    wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
 
     if args.restore_ckpt is not None:
         model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
 
-    model.cuda()
+    model.to("cuda:1")
     model.train()
 
     if args.stage != 'chairs':
@@ -175,61 +176,68 @@ def train(args):
     logger = Logger(model, scheduler)
 
     VAL_FREQ = 10 #5000
-    add_noise = True
+    add_noise = False
 
     should_keep_training = True
     while should_keep_training:
-
+        loss_epoch = 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image_batch, template_batch = [x.cuda() for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
+            image_batch, template_batch = [x.to("cuda:1") for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).cuda()).clamp(0.0, 255.0)
                 template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).cuda()).clamp(0.0, 255.0)
 
-            flow_predictions = model(image_batch, template_batch, iters=args.iters) 
-            # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
-            loss = disimilarity_loss(image_batch, template_batch, flow_predictions, args.gamma) # -- loss in batch
+            flow_predictions = model(image_batch, template_batch, iters=args.iters)
             
-            #loss, metrics = sequence_loss(flow_predictions, flow, valid, args.gamma)
-            scaler.scale(loss).backward()
+            if (i_batch % 300 == 0):
+                warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[len(flow_predictions)-1]) # [B, N, H, W]
+                wandb.log({"Training original image from epoch"+str(total_steps): wandb.Image(image_batch[0,3,:,:]), 
+                           "Training template from epoch"+str(total_steps): wandb.Image(template_batch[0,3,:,:]),
+                           "Training warped image from epoch"+str(total_steps): wandb.Image(warped_img_batch[0,3,:,:])})
+            
+            # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
+            batch_loss = disimilarity_loss(image_batch, template_batch, flow_predictions, args.gamma) # -- loss in batch
+            loss_epoch += batch_loss / len(train_loader)
+
+            scaler.scale(batch_loss).backward()
             scaler.unscale_(optimizer)                
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
             
             scaler.step(optimizer)
             scheduler.step()
             scaler.update()
-            logger.add_scalar("Training Loss Per Epoch", loss, total_steps)
-            if total_steps % VAL_FREQ == 5:
-                PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
-                torch.save(model.state_dict(), PATH)
+         
+        #logger.add_scalar("Training Loss Per Epoch", loss_epoch, total_steps) 
+        wandb.log({"Training Loss": loss_epoch})
+        
+        
+        
+        print("Epoch:", total_steps, "training loss", loss_epoch)
+        # VALIDATION
+        results = {}
+        for val_dataset in args.validation:
+            if val_dataset == 'chairs':
+                results.update(evaluate.validate_chairs(model.module))
+            elif val_dataset == 'sintel':
+                results.update(evaluate.validate_sintel(model.module))
+            elif val_dataset == 'kitti':
+                results.update(evaluate.validate_kitti(model.module))
+            elif val_dataset == 'acdc':
+                results.update(evaluate.validate_acdc(model.module, args.gamma, args.dataset_folder))
+            wandb.log({"Validation Loss": results['acdc']})
 
-                results = {}
-                for val_dataset in args.validation:
-                    if val_dataset == 'chairs':
-                        results.update(evaluate.validate_chairs(model.module))
-                    elif val_dataset == 'sintel':
-                        results.update(evaluate.validate_sintel(model.module))
-                    elif val_dataset == 'kitti':
-                        results.update(evaluate.validate_kitti(model.module))
-                    elif val_dataset == 'acdc':
-                        results.update(evaluate.validate_acdc(model.module, args.gamma))
+            # Log every epoch
+            #if total_steps % VAL_FREQ == VAL_FREQ - 1: # log after a number of epochs
+            PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
+            torch.save(model.state_dict(), PATH)
 
-                logger.write_dict(results)
-                logger.add_scalar("Training Loss Per Epoch", results['acdc'], total_steps)
-                logger.add_image('Epoch '+ str(total_steps)+'(val)'+'batch'+str(i_batch)
-                                +'Original Image', image_batch[0,4,:,:]) # Display 4th image from first seq in batch i_batch
-                logger.add_image('Epoch '+ str(total_steps)+'(val)'+'batch'+str(i_batch)
-                                +'Template', template_batch[0,0,:,:]) # Display 4th image from first seq in batch i_batch
-                
-                warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[len(flow_predictions)-1]) # [B, N, H, W]
-                logger.add_image('Epoch '+ str(total_steps)+'(val)'+'batch'+str(i_batch)
-                                +'Warped Image', warped_img_batch[:,:,0,0]) # Display 4th warped image with last flow from first seq in batch i_batch
-                model.train()
-                if args.stage != 'chairs':
-                    model.module.freeze_bn()
-            
+            #logger.write_dict(results)
+            #    model.train()
+            #if args.stage != 'chairs':
+                #model.module.freeze_bn()
+    
             total_steps += 1 # Num of epochs
 
             if total_steps > args.num_steps:
@@ -265,6 +273,7 @@ if __name__ == '__main__':
     parser.add_argument('--dropout', type=float, default=0.0)
     parser.add_argument('--gamma', type=float, default=0.8, help='exponential weighting')
     parser.add_argument('--add_noise', action='store_true')
+    parser.add_argument('--dataset_folder', type=str)
     args = parser.parse_args()
 
     torch.manual_seed(1234)

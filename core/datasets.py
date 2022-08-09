@@ -51,10 +51,10 @@ class ACDCDataset(data.Dataset):
 
     def get_item_from_index(self, index):
         seq_path = self.seq_f_list[index]
-        seq = nib.load("datasets/ACDC_processed/"+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N]         
+        seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N]         
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
-        seq_tensor = seq_tensor[0:5, :, :] # CHANGE TO GET THE WHOLE SEQ
+        seq_tensor = seq_tensor[0:15, :, :] # CHANGE TO GET THE WHOLE SEQ
         
         template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
         seq_length = seq_tensor.shape[0]
@@ -277,6 +277,7 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
     elif args.stage == 'acdc':
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
         train_dataset = ACDCDataset(args.dataset_folder, "training")
+        print("Length of dataset is", len(train_dataset))
         
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 
         pin_memory=False, shuffle=True, num_workers=4, drop_last=True)

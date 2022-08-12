@@ -2,7 +2,25 @@
 @author ManalHamdi
 '''
 import torch
+import random
 
+def generate_image(img_batch, template_batch, flow1, flow2):
+    '''img and temp [N, H, W]
+       flow [N, 2, H, W]
+       flow1 img->temp
+       flow2 temp->img'''
+    seq_len, h, w = img_batch.shape
+    
+    idx1, idx2 = random.sample(range(0, seq_len), 2)
+    img1 = img_batch[idx1,:,:].view(1,h,w)
+    img2 = img_batch[idx2,:,:].view(1,h,w)
+    flow1 = flow1[len(flow1)-1]
+    flow2 = flow2[len(flow1)-1]
+    # convert image 1 to 2
+    temp1_g = warp_seq(img1, flow1[idx1,:,:,:].view(1,2,h,w))
+    img2_g = warp_seq(temp1_g, flow2[idx2,:,:,:].view(1,2,h,w))
+    return img2, img2_g
+    
 def generate_template(frame_seq, mode):
     if (mode == "avg"):
         if (len(frame_seq.shape) == 4):               
@@ -34,8 +52,8 @@ def warp_seq(x, flo):
 
     mask = torch.ones(x.size(), dtype=x.dtype) # [N, H, W]
     if x.is_cuda:
-        grid = grid.to("cuda:1")
-        mask = mask.to("cuda:1")
+        grid = grid.to("cuda:0")
+        mask = mask.to("cuda:0")
 
     flo = torch.flip(flo, dims=[1])
 

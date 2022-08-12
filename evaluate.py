@@ -143,22 +143,24 @@ def disimilarity_loss(image_batch, template_batch, flow_predictions, gamma):
     return partial_loss / total_iter
 
 @torch.no_grad()
-def validate_acdc(model, gamma, folder, iters=2):
+def validate_acdc(model, args, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     model.eval()
-    val_dataset = datasets.ACDCDataset(folder_path=folder, mode='validation')
+    val_dataset = datasets.ACDCDataset(folder_path=args.dataset_folder, 
+                                       h=args.image_size[0], w=args.image_size[1], 
+                                       max_seq_len=args.max_seq_len, mode='validation')
     out_list = []
     total_loss = 0
     for val_id in range(len(val_dataset)):
         image_batch, template_batch = val_dataset[val_id]
-        image_batch = image_batch[None].to("cuda:1")
-        template_batch = template_batch[None].to("cuda:1")
+        image_batch = image_batch[None].to("cuda:0")
+        template_batch = template_batch[None].to("cuda:0")
 
         #padder = InputPadder(image_batch.shape, mode='acdc')
         #image_batch, template_batch = padder.pad(image_batch, template_batch)
 
         flow_predictions = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
-        loss = disimilarity_loss(image_batch, template_batch, flow_predictions, gamma) # -- loss in batch
+        loss = disimilarity_loss(image_batch, template_batch, flow_predictions, args.gamma) # -- loss in batch
         total_loss += loss
     total_loss /= len(val_dataset)
     print("Validation ACDC: %f" % (total_loss))

@@ -50,5 +50,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
     parse_patient_id_test_success()
     get_ACDC_temporal_seq(args, "image_paths_training.txt", "training")
-    get_ACDC_temporal_seq(args, "image_paths_training.txt", "validation")
-    get_ACDC_temporal_seq(args, "image_paths_training.txt", "testing")
+    get_ACDC_temporal_seq(args, "image_paths_validation.txt", "validation")
+    get_ACDC_temporal_seq(args, "image_paths_testing.txt", "testing")

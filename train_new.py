@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import wandb
 import sys
+import losses as Losses
 sys.path.append('core')
 
 import argparse
@@ -70,22 +71,6 @@ def sequence_loss(flow_preds, flow_gt, gamma=0.8, max_flow=MAX_FLOW):
     }
 
     return flow_loss, metrics
-
-def disimilarity_loss(image_batch, template_batch, flow_predictions, gamma):
-    '''
-    image1_batch: [B, N, H, W] [B,N,H, W]
-    template: [B, N, H, W]
-    flow_predictions: list len iters, type tensor [B, N, 2, H, W]
-    '''
-    partial_loss = 0
-    total_iter = len(flow_predictions)
-    for itr in range(0, total_iter):
-        warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[itr]) # [B, N, H, W]
-        mse_loss = torch.nn.MSELoss(reduction='mean')
-        similarity = mse_loss(warped_img_batch, template_batch) # [B, N]  disimililarity of batch in iteration i
-        partial_loss += similarity * gamma ** (total_iter - itr - 1)
-        
-    return partial_loss / total_iter
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -173,17 +158,14 @@ def train(args):
 
     total_steps = 0
     scaler = GradScaler(enabled=args.mixed_precision)
-    logger = Logger(model, scheduler)
 
     VAL_FREQ = 10 #5000
     add_noise = False
 
     should_keep_training = True
     while should_keep_training:
-        loss_epoch = 0
+        loss_epoch, error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
-            #
-            
             optimizer.zero_grad()
             image_batch, template_batch = [x.to("cuda:0") for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
             if args.add_noise:
@@ -191,30 +173,35 @@ def train(args):
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).cuda()).clamp(0.0, 255.0)
                 template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).cuda()).clamp(0.0, 255.0)
 
-            flow_predictions = model(image_batch, template_batch, iters=args.iters)
+            flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=args.iters)
            
-            '''
-            if (i_batch % 300 == 0):
-                warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[len(flow_predictions)-1]) # [B, N, H, W]
-                wandb.log({"Training original image from epoch"+str(total_steps): wandb.Image(image_batch[0,3,:,:]), 
-                           "Training template from epoch"+str(total_steps): wandb.Image(template_batch[0,3,:,:]),
-                           "Training warped image from epoch"+str(total_steps): wandb.Image(warped_img_batch[0,3,:,:])})
-            '''
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
-            batch_loss = disimilarity_loss(image_batch, template_batch, flow_predictions, args.gamma) # -- loss in batch
+            batch_loss, batch_error, spa_loss, temp_loss = Losses.disimilarity_loss(image_batch, template_batch, 
+                                                              flow_predictions1, flow_predictions2, 
+                                                              epoch=total_steps, mode="training", 
+                                                              i_batch=i_batch, args=args) 
             
-            #loss, metrics = sequence_loss(flow_predictions, flow_predictions, args.gamma)
             scaler.scale(batch_loss).backward()
            
             scaler.unscale_(optimizer)                
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+            
             scaler.step(optimizer)
             scheduler.step()
+            
             scaler.update()
             loss_epoch += batch_loss.item() / len(train_loader)
+            spa_epoch += spa_loss.item() / len(train_loader)
+            temp_epoch += temp_loss.item() / len(train_loader)
+            error_epoch += batch_error.item() / len(train_loader)
             
-        wandb.log({"Training Loss": loss_epoch})
+        wandb.log({"Training Total Loss": loss_epoch})
+        wandb.log({"Training Error": error_epoch})
+        wandb.log({"Training Spatial Loss": spa_epoch})
+        wandb.log({"Training Temporal Loss": temp_epoch})
+        
         print("Epoch:", total_steps, "training loss", loss_epoch)
+        print("Epoch:", total_steps, "training error", error_epoch)
         # VALIDATION
         results = {}
         for val_dataset in args.validation:
@@ -225,8 +212,11 @@ def train(args):
             elif val_dataset == 'kitti':
                 results.update(evaluate.validate_kitti(model.module))
             elif val_dataset == 'acdc':
-                results.update(evaluate.validate_acdc(model.module, args))
-            wandb.log({"Validation Loss": results['acdc']})
+                val_loss, val_error, val_spa_loss, val_temp_loss = evaluate.validate_acdc(model.module, args, epoch=total_steps)
+            wandb.log({"Validation Total Loss": val_loss})
+            wandb.log({"Validation Spatial Loss": val_spa_loss})
+            wandb.log({"Validation Temporal Loss": val_temp_loss})
+            wandb.log({"Validation Error": val_error})
 
             # Log every epoch
             #if total_steps % VAL_FREQ == VAL_FREQ - 1: # log after a number of epochs
@@ -240,12 +230,11 @@ def train(args):
     
             total_steps += 1 # Num of epochs
 
-            if total_steps > args.num_steps:
+            if total_steps >= args.num_steps:
                 should_keep_training = False
                 break
         
 
-    logger.close()
     PATH = 'checkpoints/%s.pth' % args.name
     torch.save(model.state_dict(), PATH)
 
@@ -276,6 +265,8 @@ if __name__ == '__main__':
     parser.add_argument('--add_noise', action='store_true')
     parser.add_argument('--dataset_folder', type=str)
     parser.add_argument('--max_seq_len', type=int, default=35)
+    parser.add_argument('--beta_spatial', type=float, default=0.0)
+    parser.add_argument('--beta_temporal', type=float, default=0.0)
     args = parser.parse_args()
 
     torch.manual_seed(1234)

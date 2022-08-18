@@ -23,12 +23,10 @@ class ACDCDataset(data.Dataset):
     Each line represents a patient
     img_path tx ty theta s
     '''
-    def __init__(self, folder_path, mode, h, w, max_seq_len):
+    def __init__(self, folder_path, mode, max_seq_len):
         self.folder_path = folder_path
         self.seq_f_list = [f for f in os.listdir(self.folder_path+mode+"/") if osp.isfile(osp.join(self.folder_path+mode+"/", f))] # List of filenames of seqs
         self.mode = mode
-        self.H = h
-        self.W = w
         self.max_seq_len = max_seq_len
 
     def __getitem__(self, key):
@@ -54,7 +52,7 @@ class ACDCDataset(data.Dataset):
     
     def get_item_from_index(self, index):
         seq_path = self.seq_f_list[index]
-        seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N]         
+        seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
         if (seq_tensor.shape[0] > self.max_seq_len):
@@ -62,14 +60,12 @@ class ACDCDataset(data.Dataset):
             
         template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
         seq_length = seq_tensor.shape[0]
-
-        #h = self.H
-        #w = self.W
         h = seq_tensor.shape[1]
         w = seq_tensor.shape[2]
+        if (h == 424 or w == 512):
+            print(self.folder_path+self.mode+"/"+seq_path)
         template_seq = template.repeat(seq_length, 1, 1)
         
-        #return seq[:, 0:h, 0:w], template[:, 0:h, 0:w] #[N, H, W], [N, H, W]
         return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8]
 
 class FlowDataset(data.Dataset):
@@ -284,7 +280,7 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
         train_dataset = KITTI(aug_params, split='training')
     elif args.stage == 'acdc':
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
-        train_dataset = ACDCDataset(args.dataset_folder, "training", h=args.image_size[0], w=args.image_size[1], max_seq_len=args.max_seq_len)
+        train_dataset = ACDCDataset(args.dataset_folder, "training", max_seq_len=args.max_seq_len)
         print("Length of dataset is", len(train_dataset))
         
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 

@@ -89,14 +89,8 @@ class RAFT(nn.Module):
         up_flow = torch.sum(mask * up_flow, dim=2)
         up_flow = up_flow.permute(0, 1, 4, 2, 5, 3)
         return up_flow.reshape(N, 2, 8*H, 8*W)
-
-        
-    def forward(self, image_batch, template_batch, iters=12, flow_init=None, upsample=True, test_mode=False):
-        """ Estimate optical flow between pair of frames B: batch size N: length of sequence
-            image and template batch are tensors [B, N, H, W] // instead of [B, C, H, W]
-            Returns list of flow estimations with length iters, and each item of the list is [B, N, 2, H, W]// [B, 2, H, W]
-        """
-        
+    
+    def predict_flow(self, image_batch, template_batch, iters=12, flow_init=None, upsample=True, test_mode=False):
         batch_size, seq_size, h, w = image_batch.shape #batch size is num_seq = 1
         
         assert batch_size == 1, "ERROR: batch size is not 1 sequence."
@@ -157,3 +151,13 @@ class RAFT(nn.Module):
             flow_predictions.append(flow_up.view(1, seq_size, 2, h, w))
         
         return flow_predictions #list with length of iters, 1 element is [1, N, 2, H, W]
+        
+    def forward(self, image_batch, template_batch, iters=12, flow_init=None, upsample=True, test_mode=False):
+        """ Estimate optical flow between pair of frames B: batch size N: length of sequence
+            image and template batch are tensors [B, N, H, W] // instead of [B, C, H, W]
+            Returns list of flow estimations with length iters, and each item of the list is [B, N, 2, H, W]// [B, 2, H, W]
+        """
+        flow_pred1 = self.predict_flow(image_batch, template_batch, iters=12, flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
+        flow_pred2 = self.predict_flow(template_batch, image_batch, iters=12, flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
+        return flow_pred1, flow_pred2
+        

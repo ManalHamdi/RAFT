@@ -1,3 +1,4 @@
+import losses as Losses
 import sys
 sys.path.append('core')
 
@@ -126,31 +127,15 @@ def validate_sintel(model, iters=32):
         results[dstype] = np.mean(epe_list)
 
     return results
-def disimilarity_loss(image_batch, template_batch, flow_predictions, gamma):
-    '''
-    image1_batch: [B, N, H, W]
-    template: [B, N, H, W]
-    flow_predictions: list len iters, type tensor [B, N, 2, H, W]
-    '''
-    partial_loss = 0
-    total_iter = len(flow_predictions)
-    for itr in range(0, total_iter):
-        warped_img_batch = seq_utils.warp_batch(image_batch, flow_predictions[itr]) # [B, N, H, W]
-        mse_loss = torch.nn.MSELoss(reduction='mean')
-        similarity = mse_loss(warped_img_batch, template_batch) # [B, N]  disimililarity of batch in iteration i
-        partial_loss += similarity * gamma ** (total_iter - itr - 1)
-        
-    return partial_loss / total_iter
 
 @torch.no_grad()
-def validate_acdc(model, args, iters=2):
+def validate_acdc(model, args, epoch, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     model.eval()
     val_dataset = datasets.ACDCDataset(folder_path=args.dataset_folder, 
-                                       h=args.image_size[0], w=args.image_size[1], 
                                        max_seq_len=args.max_seq_len, mode='validation')
     out_list = []
-    total_loss = 0
+    total_loss, total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0
     for val_id in range(len(val_dataset)):
         image_batch, template_batch = val_dataset[val_id]
         image_batch = image_batch[None].to("cuda:0")
@@ -159,12 +144,23 @@ def validate_acdc(model, args, iters=2):
         #padder = InputPadder(image_batch.shape, mode='acdc')
         #image_batch, template_batch = padder.pad(image_batch, template_batch)
 
-        flow_predictions = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
-        loss = disimilarity_loss(image_batch, template_batch, flow_predictions, args.gamma) # -- loss in batch
-        total_loss += loss
+        flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
+        loss, error, spa_loss, temp_loss = Losses.disimilarity_loss(image_batch, template_batch, 
+                                           flow_predictions1, flow_predictions2, 
+                                           epoch=epoch, mode="validation", 
+                                           i_batch=2, args=args) # -- loss in batch
+        total_loss += loss.item()
+        total_error += error.item()
+        total_spa_loss += spa_loss.item()
+        total_temp_loss += temp_loss.item()
+        
     total_loss /= len(val_dataset)
+    total_error /= len(val_dataset)
+    total_spa_loss /= len(val_dataset)
+    total_temp_loss /= len(val_dataset)
     print("Validation ACDC: %f" % (total_loss))
-    return {'acdc': total_loss}
+    print("Validation Eroor ACDC: %f" % (total_error))
+    return total_loss, total_error, total_spa_loss, total_temp_loss
     
 
 

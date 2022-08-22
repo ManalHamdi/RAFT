@@ -10,5 +10,5 @@ module load python/anaconda3
 conda activate raft
 mkdir -p checkpoints
 CUDA_VISIBLE_DEVICES=0
-python3 -u train_new.py --name raft-acdc --stage acdc --validation acdc --dataset_folder "/home/kevin/manal/RAFT/datasets/ACDC_processed/" --num_steps 100 --gpus 0 --batch_size 1 --lr 0.0004 --wdecay 0.0001 --max_seq_len 20 --beta_spatial 10.0 --beta_temporal 10.0 #--restore_ckpt "checkpoints/1_raft-acdc.pth"
+python3 -u train_new.py --name raft-acdc --stage acdc --validation acdc --dataset_folder "/home/kevin/manal/RAFT/datasets/ACDC_processed/" --num_steps 100 --gpus 0 --batch_size 1 --lr 0.0004 --wdecay 0.0001 --max_seq_len 20 --beta_spatial 0.0 --beta_temporal 10.0 #--restore_ckpt "checkpoints/1_raft-acdc.pth"
 

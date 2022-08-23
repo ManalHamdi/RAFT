@@ -131,6 +131,7 @@ def validate_sintel(model, iters=32):
 @torch.no_grad()
 def validate_acdc(model, args, epoch, iters=2):
     ''' Perform validation using ACDC processed dataset '''
+    cuda_to_use = "cuda:" + str(args.gpus)
     model.eval()
     val_dataset = datasets.ACDCDataset(folder_path=args.dataset_folder, 
                                        max_seq_len=args.max_seq_len, mode='validation')
@@ -138,8 +139,8 @@ def validate_acdc(model, args, epoch, iters=2):
     total_loss, total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0
     for val_id in range(len(val_dataset)):
         image_batch, template_batch = val_dataset[val_id]
-        image_batch = image_batch[None].to("cuda:0")
-        template_batch = template_batch[None].to("cuda:0")
+        image_batch = image_batch[None].to(cuda_to_use)
+        template_batch = template_batch[None].to(cuda_to_use)
 
         #padder = InputPadder(image_batch.shape, mode='acdc')
         #image_batch, template_batch = padder.pad(image_batch, template_batch)

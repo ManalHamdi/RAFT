@@ -49,7 +49,7 @@ def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode,
         temporal_loss = Temporal_Loss(flow_forward[itr][0,:,:,:,:]) + Temporal_Loss(flow_backward[itr][0,:,:,:,:])
         partial_temporal_loss += temporal_loss 
         
-        partial_loss += (photo_loss + spatial_loss * args.beta_spatial + temporal_loss * args.beta_temporal) * args.gamma ** (total_iter - itr - 1)
+        partial_loss += (photo_loss * args.beta_photo + spatial_loss * args.beta_spatial + temporal_loss * args.beta_temporal) * args.gamma ** (total_iter - itr - 1)
         '''
         if (mode == "training"):
             wandb.log({"Training Spatial Loss": spatial_loss})
@@ -107,7 +107,7 @@ class SpatialSmoothForward(torch.nn.Module):
             loss_x = weights_x * final_x / 2.
             loss_y = weights_y * final_y / 2.
         else:
-            loss_x = final_x / 2.  # todo: why here need to be divided by 2? in return it's already divided by 2
+            loss_x = final_x / 2.
             loss_y = final_y / 2.
 
         return loss_x.mean() / 2. + loss_y.mean() / 2.
@@ -121,7 +121,8 @@ class TemporalSmooth(torch.nn.Module):
         self.grad = grad
 
     def forward(self, flow):
-        dt = flow[1:, ...] - flow[:-1, ...] if self.mode == 'forward' else temporal_grad_central(flow)
+        dt = flow[1:, ...] - flow[:-1, ...] if self.mode == 'forward' else temporal_grad_central(flow) 
+        # Seq without last img - Seq without first img 
         if self.grad == 2:
             dt = dt[1:, ...] - dt[:-1, ...] if self.mode == 'forward' else temporal_grad_central(dt)
 

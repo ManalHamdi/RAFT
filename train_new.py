@@ -146,8 +146,8 @@ def train(args):
 
     if args.restore_ckpt is not None:
         model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
-
-    model.to("cuda:0")
+    cuda_to_use = "cuda:" + str(args.gpus)
+    model.to(cuda_to_use)
     model.train()
 
     if args.stage != 'chairs':
@@ -167,7 +167,7 @@ def train(args):
         loss_epoch, error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image_batch, template_batch = [x.to("cuda:0") for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
+            image_batch, template_batch = [x.to(cuda_to_use) for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).cuda()).clamp(0.0, 255.0)
@@ -265,6 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--add_noise', action='store_true')
     parser.add_argument('--dataset_folder', type=str)
     parser.add_argument('--max_seq_len', type=int, default=35)
+    parser.add_argument('--beta_photo', type=float, default=1.0)
     parser.add_argument('--beta_spatial', type=float, default=0.0)
     parser.add_argument('--beta_temporal', type=float, default=0.0)
     args = parser.parse_args()

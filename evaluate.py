@@ -131,7 +131,7 @@ def validate_sintel(model, iters=32):
 @torch.no_grad()
 def validate_acdc(model, args, epoch, iters=2):
     ''' Perform validation using ACDC processed dataset '''
-    cuda_to_use = "cuda:" + str(args.gpus)
+    cuda_to_use = "cuda:" + str(args.gpus[0])
     model.eval()
     val_dataset = datasets.ACDCDataset(folder_path=args.dataset_folder, 
                                        max_seq_len=args.max_seq_len, mode='validation')

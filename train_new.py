@@ -146,7 +146,7 @@ def train(args):
 
     if args.restore_ckpt is not None:
         model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
-    cuda_to_use = "cuda:" + str(args.gpus)
+    cuda_to_use = "cuda:" + str(args.gpus[0])
     model.to(cuda_to_use)
     model.train()
 

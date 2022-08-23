@@ -170,11 +170,11 @@ def train(args):
             image_batch, template_batch = [x.to(cuda_to_use) for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
-                image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).cuda()).clamp(0.0, 255.0)
-                template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).cuda()).clamp(0.0, 255.0)
+                image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
+                template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
 
             flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=args.iters)
-           
+
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
             batch_loss, batch_error, spa_loss, temp_loss = Losses.disimilarity_loss(image_batch, template_batch, 
                                                               flow_predictions1, flow_predictions2, 

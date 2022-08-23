@@ -35,13 +35,14 @@ def generate_template(frame_seq, mode):
     else:
         print("This mode", mode, "is not supported for template generation.")
     
-def warp_seq(x, flo):
+def warp_seq(x, flo, gpu=0):
     """
     @author: Jiazhen Pan
     warp a sequence of images/tensor (im) back to template, according to the optical flow
     x: [N, H, W] (im2)   
     flo: [N, 2, H, W] flow
     """
+    cuda_to_use = "cuda:" + str(gpu)
     N, H, W = x.size() #[5, 224, 256]
     # mesh grid
     xx = torch.arange(0, W).view(1, -1).repeat(H, 1) # [H, W]
@@ -52,8 +53,8 @@ def warp_seq(x, flo):
 
     mask = torch.ones(x.size(), dtype=x.dtype) # [N, H, W]
     if x.is_cuda:
-        grid = grid.to("cuda:0")
-        mask = mask.to("cuda:0")
+        grid = grid.to(cuda_to_use)
+        mask = mask.to(cuda_to_use)
 
     flo = torch.flip(flo, dims=[1])
 
@@ -71,7 +72,7 @@ def warp_seq(x, flo):
 
     return (output * mask).view(N, H, W)
     
-def warp_batch(batch_seq, batch_flo):
+def warp_batch(batch_seq, batch_flo, gpu=0):
     """
     warp a batch of sequences of images/tensor (im) back to template, according to the batch of optical flow
     batch_seq: [B, N, H, W] (im2)
@@ -81,7 +82,7 @@ def warp_batch(batch_seq, batch_flo):
     for b in range(0, batch_seq.shape[0]):
         seq = batch_seq[b, :, :, :] #[N, H, W]
         flo_seq = batch_flo[b, :, :, :, :] 
-        warped_seq = warp_seq(seq, flo_seq) # [N, H, W]
+        warped_seq = warp_seq(seq, flo_seq, gpu) # [N, H, W]
         warped_seq_list.append(warped_seq)
     warped_batch = torch.stack(warped_seq_list, dim=0) # [B, N, H, W]
     return warped_batch

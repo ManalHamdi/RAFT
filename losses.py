@@ -35,8 +35,8 @@ def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode,
     partial_temporal_loss = 0
     
     for itr in range(0, total_iter):
-        temp_pred = seq_utils.warp_batch(img_gt, flow_forward[itr]) # [B, N, H, W]
-        img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr]) # [B, N, H, W]
+        temp_pred = seq_utils.warp_batch(img_gt, flow_forward[itr], gpu=args.gpus[0]) # [B, N, H, W]
+        img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr], gpu=args.gpus[0]) # [B, N, H, W]
         
         Charbonnier_Loss = CharbonnierLoss()
         photo_loss = Charbonnier_Loss(temp_pred, temp_gt) + Charbonnier_Loss(img_pred, img_gt) #[B, N] loss of batch in iteration i

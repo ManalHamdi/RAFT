@@ -212,7 +212,8 @@ def train(args):
             elif val_dataset == 'kitti':
                 results.update(evaluate.validate_kitti(model.module))
             elif val_dataset == 'acdc':
-                val_loss, val_error, val_spa_loss, val_temp_loss = evaluate.validate_acdc(model.module, args, epoch=total_steps)
+                val_loss, val_error, val_spa_loss, val_temp_loss = evaluate.validate_acdc(model.module, args, 
+                                                                                          epoch=total_steps, mode='validation')
             wandb.log({"Validation Total Loss": val_loss})
             wandb.log({"Validation Spatial Loss": val_spa_loss})
             wandb.log({"Validation Temporal Loss": val_temp_loss})

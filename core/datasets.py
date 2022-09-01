@@ -53,11 +53,13 @@ class ACDCDataset(data.Dataset):
     def get_item_from_index(self, index):
         seq_path = self.seq_f_list[index]
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
+        seq = self.image_normalization(seq)
+        
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
         if (seq_tensor.shape[0] > self.max_seq_len):
-            seq_tensor = seq_tensor[0:self.max_seq_len, :, :] # CHANGE TO GET THE WHOLE SEQ
-            
+            seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
+
         template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
         seq_length = seq_tensor.shape[0]
         h = seq_tensor.shape[1]

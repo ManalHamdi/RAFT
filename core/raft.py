@@ -60,14 +60,6 @@ class RAFT(nn.Module):
             if isinstance(m, nn.BatchNorm2d):
                 m.eval()
 
-    '''def initialize_flow(self, img):
-        """ Flow is represented as difference between two coordinate grids flow = coords1 - coords0"""
-        B, N, H, W = img.shape  # [B, 1, H, W]
-        coords0 = coords_grid(B, H//8, W//8, device=img.device).view(B, 1, 2, H//8, W//8).repeat(1, N, 1, 1, 1) #[B,N,2,H//8,W//8]
-        coords1 = coords_grid(B, H//8, W//8, device=img.device).view(B, 1, 2, H//8, W//8).repeat(1, N, 1, 1, 1) #[B,N,2,H//8,W//8]
-
-        # optical flow computed as difference: flow = coords1 - coords0
-        return coords0, coords1 #[B, N, 2, H//8, W//8]'''
     def initialize_flow(self, img):
         """ Flow is represented as difference between two coordinate grids flow = coords1 - coords0 [B, C, H, W]"""
         B, C, H, W = img.shape

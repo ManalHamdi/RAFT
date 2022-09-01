@@ -32,9 +32,32 @@ def generate_template(frame_seq, mode):
         elif (len(frame_seq.shape) == 3):             
             '''Input [N, H, W] Returns tensor [H, W]'''
             return frame_seq.mean(dim=0)
+    elif (mode == "pca"):
+        return construct_template_pca(frame_seq, 0.9)
     else:
         print("This mode", mode, "is not supported for template generation.")
+
+def construct_template_pca(seq, lvl_conf):
+    '''seq is a tensor with shape [B, N, H, W]'''
+    b, s_len, h, w = seq.shape
+    assert b == 1
+    seq = seq[0,:,:,:].numpy() #[N, H, W]
+    # Flatten the images in the seq 
+    seq_flat = np.zeros((s_len, h*w)) # [5000, 15]
+
+    for i in range(0, s_len):
+        seq_flat[i] = seq[i,:,:].flatten()
+    seq_flat = np.transpose(seq_flat) #[h*w, s], each col represents an image
+    sc = StandardScaler()
+    seq_flat = sc.fit_transform(seq_flat)
     
+    #pca = PCA(n_components=lvl_conf, svd_solver='full')
+    pca = PCA(1)
+    
+    seq_flat_transformed = pca.fit_transform(seq_flat)
+    template = seq_flat_transformed.reshape(h, w)
+    return torch.tensor(template)
+ 
 def warp_seq(x, flo, gpu=0):
     """
     @author: Jiazhen Pan

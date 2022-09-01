@@ -129,22 +129,18 @@ def validate_sintel(model, iters=32):
     return results
 
 @torch.no_grad()
-def validate_acdc(model, args, epoch, iters=2):
+def validate_acdc(model, args, epoch, mode, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.eval()
     val_dataset = datasets.ACDCDataset(folder_path=args.dataset_folder, 
-                                       max_seq_len=args.max_seq_len, mode='validation')
+                                       max_seq_len=args.max_seq_len, mode=mode)
     out_list = []
     total_loss, total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0
     for val_id in range(len(val_dataset)):
         image_batch, template_batch = val_dataset[val_id]
         image_batch = image_batch[None].to(cuda_to_use)
         template_batch = template_batch[None].to(cuda_to_use)
-
-        #padder = InputPadder(image_batch.shape, mode='acdc')
-        #image_batch, template_batch = padder.pad(image_batch, template_batch)
-
         flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
         loss, error, spa_loss, temp_loss = Losses.disimilarity_loss(image_batch, template_batch, 
                                            flow_predictions1, flow_predictions2, 
@@ -211,6 +207,15 @@ if __name__ == '__main__':
     parser.add_argument('--small', action='store_true', help='use small model')
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
     parser.add_argument('--alternate_corr', action='store_true', help='use efficent correlation implementation')
+    
+    parser.add_argument('--gpus', type=int, nargs='+', default=[0,1])
+    parser.add_argument('--gamma', type=float, default=0.8, help='exponential weighting')
+    parser.add_argument('--dataset_folder', type=str)
+    parser.add_argument('--max_seq_len', type=int, default=35)
+    parser.add_argument('--beta_photo', type=float, default=1.0)
+    parser.add_argument('--beta_spatial', type=float, default=0.0)
+    parser.add_argument('--beta_temporal', type=float, default=0.0)
+    
     args = parser.parse_args()
 
     model = torch.nn.DataParallel(RAFT(args))
@@ -231,5 +236,7 @@ if __name__ == '__main__':
 
         elif args.dataset == 'kitti':
             validate_kitti(model.module)
+        elif args.dataset == 'acdc':
+            validate_acdc(model.module, args, 1, mode='testing', iters=2)
 
 

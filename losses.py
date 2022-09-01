@@ -39,9 +39,8 @@ def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode,
         img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr], gpu=args.gpus[0]) # [B, N, H, W]
         
         Charbonnier_Loss = CharbonnierLoss()
-        photo_loss = Charbonnier_Loss(temp_pred, temp_gt) + Charbonnier_Loss(img_pred, img_gt) #[B, N] loss of batch in iteration i
-        
-        Spatial_Loss = SpatialSmooth(grad=1, boundary_awareness=False)
+        photo_loss = Charbonnier_Loss(temp_pred, temp_gt) + Charbonnier_Loss(img_pred, img_gt) #[B, N] loss batch in iteration i
+        Spatial_Loss = SpatialSmooth(grad=1, boundary_awareness=True)
         spatial_loss = Spatial_Loss(flow_forward[itr][0,:,:,:,:], img_gt) + Spatial_Loss(flow_backward[itr][0,:,:,:,:], temp_gt)
         partial_spatial_loss += spatial_loss
         
@@ -50,17 +49,10 @@ def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode,
         partial_temporal_loss += temporal_loss 
         
         partial_loss += (photo_loss * args.beta_photo + spatial_loss * args.beta_spatial + temporal_loss * args.beta_temporal) * args.gamma ** (total_iter - itr - 1)
-        '''
-        if (mode == "training"):
-            wandb.log({"Training Spatial Loss": spatial_loss})
-            wandb.log({"Training Temporal Loss": spatial_loss})
-        elif (mode == "validation"):
-            wandb.log({"Validation Spatial Loss": spatial_loss})
-            wandb.log({"Validation Temporal Loss": spatial_loss})
-        '''
+       
         l1_loss = torch.nn.L1Loss()
         partial_error += l1_loss(temp_pred, temp_gt) + l1_loss(img_pred, img_gt)
-        if (itr == total_iter-1 and (mode == "training" and i_batch % 700 == 0) or (mode == "validation" and i_batch % 200 == 0)):
+        if (itr == total_iter-1 and (mode == "training" and i_batch % 700 == 0) or (mode == "validation" and i_batch % 50 == 0)):
             flow_for = flow_vis.flow_to_color(flow_forward[itr][0,3,:,:,:].permute(1,2,0).cpu().detach().numpy())
             flow_back = flow_vis.flow_to_color(flow_backward[itr][0,3,:,:].permute(1,2,0).cpu().detach().numpy())
             

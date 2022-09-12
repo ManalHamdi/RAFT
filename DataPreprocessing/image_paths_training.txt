@@ -1,5 +1,7 @@
 patient001/patient001_frame01_gt.nii.gz patient001/patient001_frame12_gt.nii.gz patient001/patient001_4d.nii.gz
 patient002/patient002_frame01_gt.nii.gz patient002/patient002_frame12_gt.nii.gz patient002/patient002_4d.nii.gz
+patient003/patient003_frame01_gt.nii.gz patient003/patient003_frame15_gt.nii.gz patient003/patient003_4d.nii.gz
+patient004/patient004_frame01_gt.nii.gz patient004/patient004_frame15_gt.nii.gz patient004/patient004_4d.nii.gz
 patient005/patient005_frame01_gt.nii.gz patient005/patient005_frame13_gt.nii.gz patient005/patient005_4d.nii.gz
 patient006/patient006_frame01_gt.nii.gz patient006/patient006_frame16_gt.nii.gz patient006/patient006_4d.nii.gz
 patient007/patient007_frame01_gt.nii.gz patient007/patient007_frame07_gt.nii.gz patient007/patient007_4d.nii.gz
@@ -8,6 +10,8 @@ patient009/patient009_frame01_gt.nii.gz patient009/patient009_frame13_gt.nii.gz 
 patient010/patient010_frame01_gt.nii.gz patient010/patient010_frame13_gt.nii.gz patient010/patient010_4d.nii.gz
 patient011/patient011_frame01_gt.nii.gz patient011/patient011_frame08_gt.nii.gz patient011/patient011_4d.nii.gz
 patient012/patient012_frame01_gt.nii.gz patient012/patient012_frame13_gt.nii.gz patient012/patient012_4d.nii.gz
+patient013/patient013_frame01_gt.nii.gz patient013/patient013_frame14_gt.nii.gz patient013/patient013_4d.nii.gz
+patient014/patient014_frame01_gt.nii.gz patient014/patient014_frame13_gt.nii.gz patient014/patient014_4d.nii.gz
 patient015/patient015_frame01_gt.nii.gz patient015/patient015_frame10_gt.nii.gz patient015/patient015_4d.nii.gz
 patient016/patient016_frame01_gt.nii.gz patient016/patient016_frame12_gt.nii.gz patient016/patient016_4d.nii.gz
 patient017/patient017_frame01_gt.nii.gz patient017/patient017_frame09_gt.nii.gz patient017/patient017_4d.nii.gz
@@ -16,6 +20,8 @@ patient019/patient019_frame01_gt.nii.gz patient019/patient019_frame11_gt.nii.gz 
 patient020/patient020_frame01_gt.nii.gz patient020/patient020_frame11_gt.nii.gz patient020/patient020_4d.nii.gz
 patient021/patient021_frame01_gt.nii.gz patient021/patient021_frame13_gt.nii.gz patient021/patient021_4d.nii.gz
 patient022/patient022_frame01_gt.nii.gz patient022/patient022_frame11_gt.nii.gz patient022/patient022_4d.nii.gz
+patient023/patient023_frame01_gt.nii.gz patient023/patient023_frame09_gt.nii.gz patient023/patient023_4d.nii.gz
+patient024/patient024_frame01_gt.nii.gz patient024/patient024_frame09_gt.nii.gz patient024/patient024_4d.nii.gz
 patient025/patient025_frame01_gt.nii.gz patient025/patient025_frame09_gt.nii.gz patient025/patient025_4d.nii.gz
 patient026/patient026_frame01_gt.nii.gz patient026/patient026_frame12_gt.nii.gz patient026/patient026_4d.nii.gz
 patient027/patient027_frame01_gt.nii.gz patient027/patient027_frame11_gt.nii.gz patient027/patient027_4d.nii.gz
@@ -24,6 +30,8 @@ patient029/patient029_frame01_gt.nii.gz patient029/patient029_frame12_gt.nii.gz 
 patient030/patient030_frame01_gt.nii.gz patient030/patient030_frame12_gt.nii.gz patient030/patient030_4d.nii.gz
 patient031/patient031_frame01_gt.nii.gz patient031/patient031_frame10_gt.nii.gz patient031/patient031_4d.nii.gz
 patient032/patient032_frame01_gt.nii.gz patient032/patient032_frame12_gt.nii.gz patient032/patient032_4d.nii.gz
+patient033/patient033_frame01_gt.nii.gz patient033/patient033_frame14_gt.nii.gz patient033/patient033_4d.nii.gz
+patient034/patient034_frame01_gt.nii.gz patient034/patient034_frame16_gt.nii.gz patient034/patient034_4d.nii.gz
 patient035/patient035_frame01_gt.nii.gz patient035/patient035_frame11_gt.nii.gz patient035/patient035_4d.nii.gz
 patient036/patient036_frame01_gt.nii.gz patient036/patient036_frame12_gt.nii.gz patient036/patient036_4d.nii.gz
 patient037/patient037_frame01_gt.nii.gz patient037/patient037_frame12_gt.nii.gz patient037/patient037_4d.nii.gz
@@ -32,6 +40,8 @@ patient039/patient039_frame01_gt.nii.gz patient039/patient039_frame10_gt.nii.gz 
 patient040/patient040_frame01_gt.nii.gz patient040/patient040_frame13_gt.nii.gz patient040/patient040_4d.nii.gz
 patient041/patient041_frame01_gt.nii.gz patient041/patient041_frame11_gt.nii.gz patient041/patient041_4d.nii.gz
 patient042/patient042_frame01_gt.nii.gz patient042/patient042_frame16_gt.nii.gz patient042/patient042_4d.nii.gz
+patient043/patient043_frame01_gt.nii.gz patient043/patient043_frame07_gt.nii.gz patient043/patient043_4d.nii.gz
+patient044/patient044_frame01_gt.nii.gz patient044/patient044_frame11_gt.nii.gz patient044/patient044_4d.nii.gz
 patient045/patient045_frame01_gt.nii.gz patient045/patient045_frame13_gt.nii.gz patient045/patient045_4d.nii.gz
 patient046/patient046_frame01_gt.nii.gz patient046/patient046_frame10_gt.nii.gz patient046/patient046_4d.nii.gz
 patient047/patient047_frame01_gt.nii.gz patient047/patient047_frame09_gt.nii.gz patient047/patient047_4d.nii.gz
@@ -40,6 +50,8 @@ patient049/patient049_frame01_gt.nii.gz patient049/patient049_frame11_gt.nii.gz 
 patient050/patient050_frame01_gt.nii.gz patient050/patient050_frame12_gt.nii.gz patient050/patient050_4d.nii.gz
 patient051/patient051_frame01_gt.nii.gz patient051/patient051_frame11_gt.nii.gz patient051/patient051_4d.nii.gz
 patient052/patient052_frame01_gt.nii.gz patient052/patient052_frame09_gt.nii.gz patient052/patient052_4d.nii.gz
+patient053/patient053_frame01_gt.nii.gz patient053/patient053_frame12_gt.nii.gz patient053/patient053_4d.nii.gz
+patient054/patient054_frame01_gt.nii.gz patient054/patient054_frame12_gt.nii.gz patient054/patient054_4d.nii.gz
 patient055/patient055_frame01_gt.nii.gz patient055/patient055_frame10_gt.nii.gz patient055/patient055_4d.nii.gz
 patient056/patient056_frame01_gt.nii.gz patient056/patient056_frame12_gt.nii.gz patient056/patient056_4d.nii.gz
 patient057/patient057_frame01_gt.nii.gz patient057/patient057_frame09_gt.nii.gz patient057/patient057_4d.nii.gz
@@ -48,6 +60,8 @@ patient059/patient059_frame01_gt.nii.gz patient059/patient059_frame09_gt.nii.gz 
 patient060/patient060_frame01_gt.nii.gz patient060/patient060_frame14_gt.nii.gz patient060/patient060_4d.nii.gz
 patient061/patient061_frame01_gt.nii.gz patient061/patient061_frame10_gt.nii.gz patient061/patient061_4d.nii.gz
 patient062/patient062_frame01_gt.nii.gz patient062/patient062_frame09_gt.nii.gz patient062/patient062_4d.nii.gz
+patient063/patient063_frame01_gt.nii.gz patient063/patient063_frame16_gt.nii.gz patient063/patient063_4d.nii.gz
+patient064/patient064_frame01_gt.nii.gz patient064/patient064_frame12_gt.nii.gz patient064/patient064_4d.nii.gz
 patient065/patient065_frame01_gt.nii.gz patient065/patient065_frame14_gt.nii.gz patient065/patient065_4d.nii.gz
 patient066/patient066_frame01_gt.nii.gz patient066/patient066_frame11_gt.nii.gz patient066/patient066_4d.nii.gz
 patient067/patient067_frame01_gt.nii.gz patient067/patient067_frame10_gt.nii.gz patient067/patient067_4d.nii.gz
@@ -56,6 +70,8 @@ patient069/patient069_frame01_gt.nii.gz patient069/patient069_frame12_gt.nii.gz 
 patient070/patient070_frame01_gt.nii.gz patient070/patient070_frame10_gt.nii.gz patient070/patient070_4d.nii.gz
 patient071/patient071_frame01_gt.nii.gz patient071/patient071_frame09_gt.nii.gz patient071/patient071_4d.nii.gz
 patient072/patient072_frame01_gt.nii.gz patient072/patient072_frame11_gt.nii.gz patient072/patient072_4d.nii.gz
+patient073/patient073_frame01_gt.nii.gz patient073/patient073_frame10_gt.nii.gz patient073/patient073_4d.nii.gz
+patient074/patient074_frame01_gt.nii.gz patient074/patient074_frame12_gt.nii.gz patient074/patient074_4d.nii.gz
 patient075/patient075_frame01_gt.nii.gz patient075/patient075_frame06_gt.nii.gz patient075/patient075_4d.nii.gz
 patient076/patient076_frame01_gt.nii.gz patient076/patient076_frame12_gt.nii.gz patient076/patient076_4d.nii.gz
 patient077/patient077_frame01_gt.nii.gz patient077/patient077_frame09_gt.nii.gz patient077/patient077_4d.nii.gz
@@ -64,6 +80,8 @@ patient079/patient079_frame01_gt.nii.gz patient079/patient079_frame11_gt.nii.gz 
 patient080/patient080_frame01_gt.nii.gz patient080/patient080_frame10_gt.nii.gz patient080/patient080_4d.nii.gz
 patient081/patient081_frame01_gt.nii.gz patient081/patient081_frame07_gt.nii.gz patient081/patient081_4d.nii.gz
 patient082/patient082_frame01_gt.nii.gz patient082/patient082_frame07_gt.nii.gz patient082/patient082_4d.nii.gz
+patient083/patient083_frame01_gt.nii.gz patient083/patient083_frame08_gt.nii.gz patient083/patient083_4d.nii.gz
+patient084/patient084_frame01_gt.nii.gz patient084/patient084_frame10_gt.nii.gz patient084/patient084_4d.nii.gz
 patient085/patient085_frame01_gt.nii.gz patient085/patient085_frame09_gt.nii.gz patient085/patient085_4d.nii.gz
 patient086/patient086_frame01_gt.nii.gz patient086/patient086_frame08_gt.nii.gz patient086/patient086_4d.nii.gz
 patient087/patient087_frame01_gt.nii.gz patient087/patient087_frame10_gt.nii.gz patient087/patient087_4d.nii.gz
@@ -72,6 +90,8 @@ patient089/patient089_frame01_gt.nii.gz patient089/patient089_frame10_gt.nii.gz 
 patient090/patient090_frame04_gt.nii.gz patient090/patient090_frame11_gt.nii.gz patient090/patient090_4d.nii.gz
 patient091/patient091_frame01_gt.nii.gz patient091/patient091_frame09_gt.nii.gz patient091/patient091_4d.nii.gz
 patient092/patient092_frame01_gt.nii.gz patient092/patient092_frame06_gt.nii.gz patient092/patient092_4d.nii.gz
+patient093/patient093_frame01_gt.nii.gz patient093/patient093_frame14_gt.nii.gz patient093/patient093_4d.nii.gz
+patient094/patient094_frame01_gt.nii.gz patient094/patient094_frame07_gt.nii.gz patient094/patient094_4d.nii.gz
 patient095/patient095_frame01_gt.nii.gz patient095/patient095_frame12_gt.nii.gz patient095/patient095_4d.nii.gz
 patient096/patient096_frame01_gt.nii.gz patient096/patient096_frame08_gt.nii.gz patient096/patient096_4d.nii.gz
 patient097/patient097_frame01_gt.nii.gz patient097/patient097_frame11_gt.nii.gz patient097/patient097_4d.nii.gz

@@ -22,7 +22,7 @@ def get_ACDC_temporal_seq(args, path_file, mode):
         patient_files_list = f.read().splitlines() # [[seg_frame_path1, seg_frame_path2, volume4d_path], [], ..., []]
         for line in range(0, len(patient_files_list)):
             volume_path = patient_files_list[line].split()[2]
-            volume = nib.load(args.acdc_folder +"training/" + volume_path).get_fdata() # np array [H, W, Z, T] 
+            volume = nib.load(args.acdc_folder +"" + volume_path).get_fdata() # np array [H, W, Z, T] 
             H = volume.shape[0]
             W = volume.shape[1]
             Z = volume.shape[2]
@@ -49,6 +49,6 @@ if __name__ == '__main__':
     parser.add_argument('--acdc_processed_folder', default='raft', help="give the path of the folder where to store processed dataset.")    
     args = parser.parse_args()
     parse_patient_id_test_success()
-    get_ACDC_temporal_seq(args, "image_paths_training.txt", "training")
+    #get_ACDC_temporal_seq(args, "image_paths_training.txt", "training")
     get_ACDC_temporal_seq(args, "image_paths_validation.txt", "validation")
-    get_ACDC_temporal_seq(args, "image_paths_testing.txt", "testing")
+    #get_ACDC_temporal_seq(args, "image_paths_testing.txt", "testing")

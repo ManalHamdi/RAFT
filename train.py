@@ -176,12 +176,12 @@ def train(args):
             flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=args.iters)
 
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
-            batch_loss, batch_error, spa_loss, temp_loss = Losses.disimilarity_loss(image_batch, template_batch, 
+            batch_loss_dict = Losses.disimilarity_loss(image_batch, template_batch, 
                                                               flow_predictions1, flow_predictions2, 
                                                               epoch=total_steps, mode="training", 
                                                               i_batch=i_batch, args=args) 
-            
-            scaler.scale(batch_loss).backward()
+            batch_loss, batch_error, spa_loss, temp_loss 
+            scaler.scale(batch_loss_dict["Total"]).backward()
            
             scaler.unscale_(optimizer)                
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
@@ -190,10 +190,10 @@ def train(args):
             scheduler.step()
             
             scaler.update()
-            loss_epoch += batch_loss.item() / len(train_loader)
-            spa_epoch += spa_loss.item() / len(train_loader)
-            temp_epoch += temp_loss.item() / len(train_loader)
-            error_epoch += batch_error.item() / len(train_loader)
+            loss_epoch += batch_loss_dict["Total"].item() / len(train_loader)
+            spa_epoch += batch_loss_dict["Spatial"].item() / len(train_loader)
+            temp_epoch += batch_loss_dict["Temporal"].item() / len(train_loader)
+            error_epoch += batch_loss_dict["Error"].item() / len(train_loader)
             
         wandb.log({"Training Total Loss": loss_epoch})
         wandb.log({"Training Error": error_epoch})
@@ -212,15 +212,12 @@ def train(args):
             elif val_dataset == 'kitti':
                 results.update(evaluate.validate_kitti(model.module))
             elif val_dataset == 'acdc':
-                val_loss, val_error, val_spa_loss, val_temp_loss = evaluate.validate_acdc(model.module, args, 
-                                                                                          epoch=total_steps, mode='validation')
-            wandb.log({"Validation Total Loss": val_loss})
-            wandb.log({"Validation Spatial Loss": val_spa_loss})
-            wandb.log({"Validation Temporal Loss": val_temp_loss})
-            wandb.log({"Validation Error": val_error})
+                val_loss_dict = evaluate.validate_acdc(model.module, args, epoch=total_steps, mode='validation')
+
+            wandb.log({"Validation Total Loss": val_loss_dict["Total"]})
+            wandb.log({"Validation Error": val_loss_dict["Error"]})
 
             # Log every epoch
-            #if total_steps % VAL_FREQ == VAL_FREQ - 1: # log after a number of epochs
             PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
             torch.save(model.module.state_dict(), PATH)
 

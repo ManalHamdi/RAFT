@@ -75,12 +75,12 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
             partial_loss += (photo_loss * args.beta_photo) * args.gamma ** (total_iter - itr - 1)
         
         # The size of the batch is 1 sequence, so we only have 1 patient slice
-        if (mode == "training" and (patient_slice_id_gt[0] == "patient143_z_8" 
-                                    or patient_slice_id_gt[0] == "patient143_z_8" or patient_slice_id_gt[0] == "patient143_z_8")):
+        if (mode == "training" and (patient_slice_id_gt[0] == "patient020_z_4" 
+                                    or patient_slice_id_gt[0] == "patient065_z_0" or patient_slice_id_gt[0] =="patient096_z_17")):
             should_log = True
-        elif(mode == "validation" and (patient_slice_id_gt[0] == "patient143_z_8" 
-                                       or patient_slice_id_gt[0] == "patient143_z_8" 
-                                       or patient_slice_id_gt[0] == "patient143_z_8")):  
+        elif(mode == "validation" and (patient_slice_id_gt[0] == "patient124_z_8" 
+                                       or patient_slice_id_gt[0] == "patient137_z_0" 
+                                       or patient_slice_id_gt[0] == "patient150_z_3")):  
             should_log = True
         else:
             should_log = False

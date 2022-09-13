@@ -167,7 +167,7 @@ def train(args):
         loss_epoch, error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image_batch, template_batch = [x.to(cuda_to_use) for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
+            image_batch, template_batch, patient_slice_id_batch = [x.to(cuda_to_use) for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
@@ -176,7 +176,7 @@ def train(args):
             flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=args.iters)
 
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
-            batch_loss_dict = Losses.disimilarity_loss(image_batch, template_batch, 
+            batch_loss_dict = Losses.disimilarity_loss(image_batch, template_batch, patient_slice_id_batch,
                                                               flow_predictions1, flow_predictions2, 
                                                               epoch=total_steps, mode="training", 
                                                               i_batch=i_batch, args=args) 

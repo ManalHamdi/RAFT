@@ -20,7 +20,19 @@ def gradient(data):
     D_dx = data[:, :, :, 1:] - data[:, :, :, :-1]
     return D_dx, D_dy
 
-def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
+def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, index_slice, patient_name):
+    total_iter = len(flow_forward)
+    flow_for = flow_vis.flow_to_color(flow_forward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
+    flow_back = flow_vis.flow_to_color(flow_backward[total_iter-1][0,index_slice,:,:].permute(1,2,0).cpu().detach().numpy())
+            
+    wandb.log({mode + " Images": [wandb.Image(img_gt, caption=patient_name + " Image GT"), 
+                                          wandb.Image(img_pred, caption=patient_name + " Image Pred"),
+                                          wandb.Image(temp_gt, caption=patient_name + " Template GT"),
+                                          wandb.Image(temp_pred, caption=patient_name + " Template Pred"),
+                                          wandb.Image(flow_for, caption=patient_name + " Forward Flow"),
+                                          wandb.Image(flow_back, caption=patient_name + " BackwardFlow")]})
+
+def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
     '''
     image1_batch: [B, N, H, W] [B,N,H, W]
     template: [B, N, H, W]
@@ -61,18 +73,21 @@ def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode,
                              temporal_loss * args.beta_temporal) * args.gamma ** (total_iter - itr - 1)
         else:
             partial_loss += (photo_loss * args.beta_photo) * args.gamma ** (total_iter - itr - 1)
-       
         
-        if (itr == total_iter-1 and (mode == "training" and i_batch % 700 == 0) or (mode == "validation" and i_batch % 50 == 0)):
-            flow_for = flow_vis.flow_to_color(flow_forward[itr][0,3,:,:,:].permute(1,2,0).cpu().detach().numpy())
-            flow_back = flow_vis.flow_to_color(flow_backward[itr][0,3,:,:].permute(1,2,0).cpu().detach().numpy())
-            
-            wandb.log({mode + " Images": [wandb.Image(img_gt[0,3,:,:], caption="Image GT"), 
-                                          wandb.Image(img_pred[0,3,:,:], caption="Image Pred"),
-                                          wandb.Image(temp_gt[0,3,:,:], caption="Template GT"),
-                                          wandb.Image(temp_pred[0,3,:,:], caption="Template Pred"),
-                                          wandb.Image(flow_for, caption="Forward Flow"),
-                                          wandb.Image(flow_back, caption="BackwardFlow"),]})
+        # The size of the batch is 1 sequence, so we only have 1 patient slice
+        if (mode == "training" and (patient_slice_id_gt[0] == "patient143_z_8" 
+                                    or patient_slice_id_gt[0] == "patient143_z_8" or patient_slice_id_gt[0] == "patient143_z_8")):
+            should_log = True
+        elif(mode == "validation" and (patient_slice_id_gt[0] == "patient143_z_8" 
+                                       or patient_slice_id_gt[0] == "patient143_z_8" 
+                                       or patient_slice_id_gt[0] == "patient143_z_8")):  
+            should_log = True
+        else:
+            should_log = False
+        
+        if (should_log):
+            # Log slice 3 of this patient
+            log_images(img_gt[0,3,:,:], img_pred[0,3,:,:], temp_gt[0,3,:,:], temp_pred[0,3,:,:], flow_forward, flow_backward, 3, patient_slice_id_gt[0])
             
     loss_dict = {"Total": partial_loss / total_iter,
                  "Photometric": partial_photo_loss / total_iter,
@@ -81,7 +96,7 @@ def disimilarity_loss(img_gt, temp_gt, flow_forward, flow_backward, epoch, mode,
                  "Error": partial_error / total_iter}
     
     return loss_dict  
-
+            
 class SpatialSmooth(torch.nn.Module):
     def __init__(self, grad, boundary_awareness):
         super(SpatialSmooth, self).__init__()

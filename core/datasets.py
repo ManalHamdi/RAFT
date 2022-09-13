@@ -53,6 +53,7 @@ class ACDCDataset(data.Dataset):
     def get_item_from_index(self, index):
         seq_path = self.seq_f_list[index]
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
+        
         seq = self.image_normalization(seq)
         
         to_tensor = tv.transforms.ToTensor()
@@ -67,8 +68,8 @@ class ACDCDataset(data.Dataset):
         if (h == 424 or w == 512):
             print(self.folder_path+self.mode+"/"+seq_path)
         template_seq = template.repeat(seq_length, 1, 1)
-        
-        return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8]
+        patient_slice_id = seq_path.split(".")[0] # remove .nii.gz
+        return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8], patient_slice_id
 
 class FlowDataset(data.Dataset):
     def __init__(self, aug_params=None, sparse=False):

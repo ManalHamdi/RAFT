@@ -21,13 +21,13 @@ def get_ACDC_temporal_seq(args, path_file, mode):
     with open(path_file) as f:
         patient_files_list = f.read().splitlines() # [[seg_frame_path1, seg_frame_path2, volume4d_path], [], ..., []]
         for line in range(0, len(patient_files_list)):
-            volume_path = patient_files_list[line].split()[2]
+            volume_path = patient_files_list[line].split()[0]
             volume = nib.load(args.acdc_folder +"" + volume_path).get_fdata() # np array [H, W, Z, T] 
+            
             H = volume.shape[0]
             W = volume.shape[1]
             Z = volume.shape[2]
             T = volume.shape[3]
-
             patient_id = parse_patient_id(volume_path)
 
             for z in range(0, Z):
@@ -42,7 +42,7 @@ def get_ACDC_temporal_seq(args, path_file, mode):
                 if (line == 0 and z == 0): # for testing
                     volume_nib = nib.load(seq_filename).get_fdata() # Loads np array [H, W, Z, T]
                     assert volume_nib.all() == seq.all(), "The saved slices do not correspond to the loaded ones" 
-
+            
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--acdc_folder', default='raft', help="give the path of the folder where ACDC is stored.")

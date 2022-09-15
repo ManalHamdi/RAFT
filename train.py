@@ -138,7 +138,6 @@ class Logger:
     def close(self):
         self.writer.close()
 
-
 def train(args):
     wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
@@ -167,7 +166,8 @@ def train(args):
         loss_epoch, error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image_batch, template_batch, patient_slice_id_batch = [x.to(cuda_to_use) for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
+            image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
+            image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
@@ -180,7 +180,6 @@ def train(args):
                                                               flow_predictions1, flow_predictions2, 
                                                               epoch=total_steps, mode="training", 
                                                               i_batch=i_batch, args=args) 
-            batch_loss, batch_error, spa_loss, temp_loss 
             scaler.scale(batch_loss_dict["Total"]).backward()
            
             scaler.unscale_(optimizer)                

@@ -4,6 +4,7 @@ sys.path.append('core')
 import core.sequence_handling_utils as seq_utils
 import wandb
 import flow_vis
+import numpy as np 
 
 import torch.nn.functional as F
 
@@ -20,18 +21,44 @@ def gradient(data):
     D_dx = data[:, :, :, 1:] - data[:, :, :, :-1]
     return D_dx, D_dy
 
-def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, index_slice, patient_name):
+def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, index_slice, patient_name, mode):
     total_iter = len(flow_forward)
     flow_for = flow_vis.flow_to_color(flow_forward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
-    flow_back = flow_vis.flow_to_color(flow_backward[total_iter-1][0,index_slice,:,:].permute(1,2,0).cpu().detach().numpy())
-            
-    wandb.log({mode + " Images": [wandb.Image(img_gt, caption=patient_name + " Image GT"), 
-                                          wandb.Image(img_pred, caption=patient_name + " Image Pred"),
-                                          wandb.Image(temp_gt, caption=patient_name + " Template GT"),
-                                          wandb.Image(temp_pred, caption=patient_name + " Template Pred"),
-                                          wandb.Image(flow_for, caption=patient_name + " Forward Flow"),
-                                          wandb.Image(flow_back, caption=patient_name + " BackwardFlow")]})
+    flow_back = flow_vis.flow_to_color(flow_backward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
+    wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(img_gt, caption=patient_name + " Image GT"), 
+                                                      wandb.Image(img_pred, caption=patient_name + " Image Pred"),
+                                                      wandb.Image(temp_gt, caption=patient_name + " Template GT"),
+                                                      wandb.Image(temp_pred, caption=patient_name + " Template Pred"),
+                                                      wandb.Image(flow_for, caption=patient_name + " Forward Flow"),
+                                                      wandb.Image(flow_back, caption=patient_name + " BackwardFlow")]})
 
+def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, patient_name, mode):
+    total_iter = len(flow_forward)
+    b, s, _, h, w = flow_forward[0].shape
+    i1 = img_gt.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:] #s, c, h, w
+    i2 = img_pred.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+    i3 = temp_gt.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+    i4 = temp_pred.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+  
+    all_flows_fwd = np.empty([s, 3, h, w])
+    all_flows_bwd = np.empty([s, 3, h, w])
+    for frame_idx in range(0, s):
+        flow_for = flow_vis.flow_to_color(flow_forward[total_iter-1][0,frame_idx,:,:,:].permute(1, 2, 0).cpu().detach().numpy())
+        all_flows_fwd[frame_idx,:,:,:] =  np.transpose(flow_for, (2,0,1))
+        flow_bwd = flow_vis.flow_to_color(flow_backward[total_iter-1][0,frame_idx,:,:,:].permute(1, 2, 0).cpu().detach().numpy())
+        all_flows_bwd[frame_idx,:,:,:] =  np.transpose(flow_bwd, (2,0,1))
+        frame_idx += 1
+        
+    i5 = all_flows_bwd
+    i6 = all_flows_bwd
+    
+    wandb.log({"GIF " + mode + " " + patient_name + " ": [wandb.Video(i1*255, fps=2, caption="Image gt" , format="gif"),
+                                                          wandb.Video(i2*255, fps=2, caption="Image Pred" , format="gif"),
+                                                          wandb.Video(i3*255, fps=2, caption="Template gt" , format="gif"),
+                                                          wandb.Video(i4*255, fps=2, caption="Template pred" , format="gif"),
+                                                          wandb.Video(i5*255, fps=2, caption="Forward Flow" , format="gif"),
+                                                          wandb.Video(i6*255, fps=2, caption="Backward Flow" , format="gif")]})
+    
 def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
     '''
     image1_batch: [B, N, H, W] [B,N,H, W]
@@ -46,7 +73,7 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
     partial_spatial_loss = 0
     partial_temporal_loss = 0
     partial_photo_loss = 0
-    
+    should_log = False
     for itr in range(0, total_iter):
         temp_pred = seq_utils.warp_batch(img_gt, flow_forward[itr], gpu=args.gpus[0]) # [B, N, H, W]
         img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr], gpu=args.gpus[0]) # [B, N, H, W]
@@ -60,8 +87,7 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
         
         if (mode == 'training'):
             Spatial_Loss = SpatialSmooth(grad=1, boundary_awareness=True)
-            spatial_loss = Spatial_Loss(flow_forward[itr][0,:,:,:,:], img_gt) + 
-                           Spatial_Loss(flow_backward[itr][0,:,:,:,:], temp_gt)
+            spatial_loss = Spatial_Loss(flow_forward[itr][0,:,:,:,:], img_gt) + Spatial_Loss(flow_backward[itr][0,:,:,:,:], temp_gt)
             partial_spatial_loss += spatial_loss
         
             Temporal_Loss = TemporalSmooth(mode="forward", grad=1)
@@ -75,19 +101,22 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
             partial_loss += (photo_loss * args.beta_photo) * args.gamma ** (total_iter - itr - 1)
         
         # The size of the batch is 1 sequence, so we only have 1 patient slice
-        if (mode == "training" and (patient_slice_id_gt[0] == "patient020_z_4" 
-                                    or patient_slice_id_gt[0] == "patient065_z_0" or patient_slice_id_gt[0] =="patient096_z_17")):
+        if (itr == total_iter - 1 and mode == "training" and (patient_slice_id_gt[0] == "patient020_z_4" 
+                                                           or patient_slice_id_gt[0] == "patient065_z_0" 
+                                                           or patient_slice_id_gt[0] =="patient096_z_17")):
             should_log = True
-        elif(mode == "validation" and (patient_slice_id_gt[0] == "patient124_z_8" 
-                                       or patient_slice_id_gt[0] == "patient137_z_0" 
-                                       or patient_slice_id_gt[0] == "patient150_z_3")):  
+        elif(itr == total_iter - 1 and mode == "validation" and (patient_slice_id_gt[0] == "patient124_z_8" 
+                                                              or patient_slice_id_gt[0] == "patient137_z_0" 
+                                                              or patient_slice_id_gt[0] == "patient150_z_3")):  
             should_log = True
         else:
             should_log = False
         
         if (should_log):
             # Log slice 3 of this patient
-            log_images(img_gt[0,3,:,:], img_pred[0,3,:,:], temp_gt[0,3,:,:], temp_pred[0,3,:,:], flow_forward, flow_backward, 3, patient_slice_id_gt[0])
+            log_images(img_gt[0,3,:,:], img_pred[0,3,:,:], temp_gt[0,3,:,:], temp_pred[0,3,:,:], 
+                       flow_forward, flow_backward, 3, patient_slice_id_gt[0], mode)
+            log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, patient_slice_id_gt[0], mode)
             
     loss_dict = {"Total": partial_loss / total_iter,
                  "Photometric": partial_photo_loss / total_iter,

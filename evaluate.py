@@ -137,29 +137,24 @@ def validate_acdc(model, args, epoch, mode, iters=2):
                                        max_seq_len=args.max_seq_len, mode=mode)
     out_list = []
     total_loss, total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0
-    for val_id in range(len(val_dataset)):
-        image_batch, template_batch = val_dataset[val_id]
+    for val_id in range(0, len(val_dataset)):
+        image_batch, template_batch, patient_slice_id_batch = val_dataset[val_id]
         image_batch = image_batch[None].to(cuda_to_use)
         template_batch = template_batch[None].to(cuda_to_use)
         flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
-        loss, error, spa_loss, temp_loss = Losses.disimilarity_loss(image_batch, template_batch, 
+        batch_loss_dict = Losses.disimilarity_loss(image_batch, template_batch, [patient_slice_id_batch],
                                            flow_predictions1, flow_predictions2, 
                                            epoch=epoch, mode="validation", 
                                            i_batch=2, args=args) # -- loss in batch
-        total_loss += loss.item()
-        total_error += error.item()
-        total_spa_loss += spa_loss.item()
-        total_temp_loss += temp_loss.item()
-        
-    total_loss /= len(val_dataset)
-    total_error /= len(val_dataset)
-    total_spa_loss /= len(val_dataset)
-    total_temp_loss /= len(val_dataset)
-    print("Validation ACDC: %f" % (total_loss))
-    print("Validation Eroor ACDC: %f" % (total_error))
-    return total_loss, total_error, total_spa_loss, total_temp_loss
-    
 
+        total_loss += batch_loss_dict["Total"].item() / len(val_dataset)
+        total_error += batch_loss_dict["Error"].item() / len(val_dataset)
+    val_dict = {"Total": total_loss,
+                "Error": total_error}
+    print("Validation ACDC: %f" % (total_loss))
+    print("Validation Error ACDC: %f" % (total_error))
+    return val_dict
+    
 
 @torch.no_grad()
 def validate_kitti(model, iters=24):

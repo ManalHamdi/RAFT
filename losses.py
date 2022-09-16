@@ -23,10 +23,14 @@ def gradient(data):
 
 def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, index_slice, patient_name, mode):
     total_iter = len(flow_forward)
+    
+    error = torch.abs(img_pred - img_gt)
     flow_for = flow_vis.flow_to_color(flow_forward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
     flow_back = flow_vis.flow_to_color(flow_backward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
+    
     wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(img_gt, caption=patient_name + " Image GT"), 
                                                       wandb.Image(img_pred, caption=patient_name + " Image Pred"),
+                                                      wandb.Image(error, caption=patient_name + " Error"),
                                                       wandb.Image(temp_gt, caption=patient_name + " Template GT"),
                                                       wandb.Image(temp_pred, caption=patient_name + " Template Pred"),
                                                       wandb.Image(flow_for, caption=patient_name + " Forward Flow"),
@@ -35,11 +39,12 @@ def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward
 def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, patient_name, mode):
     total_iter = len(flow_forward)
     b, s, _, h, w = flow_forward[0].shape
+    
     i1 = img_gt.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:] #s, c, h, w
     i2 = img_pred.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
     i3 = temp_gt.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
     i4 = temp_pred.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
-  
+    
     all_flows_fwd = np.empty([s, 3, h, w])
     all_flows_bwd = np.empty([s, 3, h, w])
     for frame_idx in range(0, s):
@@ -52,12 +57,16 @@ def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, 
     i5 = all_flows_bwd
     i6 = all_flows_bwd
     
+    error = torch.abs(img_pred - img_gt)
+    i7 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+    
     wandb.log({"GIF " + mode + " " + patient_name + " ": [wandb.Video(i1*255, fps=2, caption="Image gt" , format="gif"),
                                                           wandb.Video(i2*255, fps=2, caption="Image Pred" , format="gif"),
                                                           wandb.Video(i3*255, fps=2, caption="Template gt" , format="gif"),
                                                           wandb.Video(i4*255, fps=2, caption="Template pred" , format="gif"),
                                                           wandb.Video(i5*255, fps=2, caption="Forward Flow" , format="gif"),
-                                                          wandb.Video(i6*255, fps=2, caption="Backward Flow" , format="gif")]})
+                                                          wandb.Video(i6*255, fps=2, caption="Backward Flow" , format="gif"),
+                                                          wandb.Video(i7*255, fps=2, caption="Error" , format="gif")]})
     
 def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
     '''

@@ -36,7 +36,7 @@ def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward
                                                       wandb.Image(flow_for, caption=patient_name + " Forward Flow"),
                                                       wandb.Image(flow_back, caption=patient_name + " BackwardFlow")]})
 
-def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, patient_name, mode):
+def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, patient_name, mode, add_normalisation):
     total_iter = len(flow_forward)
     b, s, _, h, w = flow_forward[0].shape
     
@@ -59,14 +59,19 @@ def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, 
     
     error = torch.abs(img_pred - img_gt)
     i7 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+
+    if (add_normalisation):
+        scale = 255
+    else:
+        scale = 1
     
-    wandb.log({"GIF " + mode + " " + patient_name + " ": [wandb.Video(i1*255, fps=2, caption="Image gt" , format="gif"),
-                                                          wandb.Video(i2*255, fps=2, caption="Image Pred" , format="gif"),
-                                                          wandb.Video(i3*255, fps=2, caption="Template gt" , format="gif"),
-                                                          wandb.Video(i4*255, fps=2, caption="Template pred" , format="gif"),
-                                                          wandb.Video(i5*255, fps=2, caption="Forward Flow" , format="gif"),
-                                                          wandb.Video(i6*255, fps=2, caption="Backward Flow" , format="gif"),
-                                                          wandb.Video(i7*255, fps=2, caption="Error" , format="gif")]})
+    wandb.log({"GIF " + mode + " " + patient_name + " ": [wandb.Video(i1*scale, fps=2, caption="Image gt" , format="gif"),
+                                                          wandb.Video(i2*scale, fps=2, caption="Image Pred" , format="gif"),
+                                                          wandb.Video(i3*scale, fps=2, caption="Template gt" , format="gif"),
+                                                          wandb.Video(i4*scale, fps=2, caption="Template pred" , format="gif"),
+                                                          wandb.Video(i5*scale, fps=2, caption="Forward Flow" , format="gif"),
+                                                          wandb.Video(i6*scale, fps=2, caption="Backward Flow" , format="gif"),
+                                                          wandb.Video(i7*scale, fps=2, caption="Error" , format="gif")]})
     
 def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
     '''
@@ -125,7 +130,10 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
             # Log slice 3 of this patient
             log_images(img_gt[0,3,:,:], img_pred[0,3,:,:], temp_gt[0,3,:,:], temp_pred[0,3,:,:], 
                        flow_forward, flow_backward, 3, patient_slice_id_gt[0], mode)
-            log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, patient_slice_id_gt[0], mode)
+            log_gifs(img_gt, img_pred, 
+                     temp_gt, temp_pred, 
+                     flow_forward, flow_backward, 
+                     patient_slice_id_gt[0], mode, args.add_normalisation)
             
     loss_dict = {"Total": partial_loss / total_iter,
                  "Photometric": partial_photo_loss / total_iter,

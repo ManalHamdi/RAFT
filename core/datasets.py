@@ -23,11 +23,12 @@ class ACDCDataset(data.Dataset):
     Each line represents a patient
     img_path tx ty theta s
     '''
-    def __init__(self, folder_path, mode, max_seq_len):
+    def __init__(self, folder_path, mode, max_seq_len, add_normalisation):
         self.folder_path = folder_path
         self.seq_f_list = [f for f in os.listdir(self.folder_path+mode+"/") if osp.isfile(osp.join(self.folder_path+mode+"/", f))] # List of filenames of seqs
         self.mode = mode
         self.max_seq_len = max_seq_len
+        self.add_normalisation = add_normalisation
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -53,8 +54,9 @@ class ACDCDataset(data.Dataset):
     def get_item_from_index(self, index):
         seq_path = self.seq_f_list[index]
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
-        
-        seq = self.image_normalization(seq)
+
+        if (self.add_normalisation):
+            seq = self.image_normalization(seq)
         
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
@@ -283,7 +285,7 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
         train_dataset = KITTI(aug_params, split='training')
     elif args.stage == 'acdc':
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
-        train_dataset = ACDCDataset(args.dataset_folder, "training", max_seq_len=args.max_seq_len)
+        train_dataset = ACDCDataset(args.dataset_folder, "training", args.max_seq_len, args.add_normalisation)
         print("Length of dataset is", len(train_dataset))
         
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 

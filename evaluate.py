@@ -133,8 +133,8 @@ def validate_acdc(model, args, epoch, mode, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.eval()
-    val_dataset = datasets.ACDCDataset(folder_path=args.dataset_folder, 
-                                       max_seq_len=args.max_seq_len, mode=mode)
+    val_dataset = datasets.ACDCDataset(args.dataset_folder, mode, args.max_seq_len, args.add_normalisation)
+
     out_list = []
     total_loss, total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0
     for val_id in range(0, len(val_dataset)):

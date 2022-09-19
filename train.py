@@ -262,9 +262,11 @@ if __name__ == '__main__':
     parser.add_argument('--add_noise', action='store_true')
     parser.add_argument('--dataset_folder', type=str)
     parser.add_argument('--max_seq_len', type=int, default=35)
+    parser.add_argument('--add_normalisation', action='store_true')
     parser.add_argument('--beta_photo', type=float, default=1.0)
     parser.add_argument('--beta_spatial', type=float, default=0.0)
     parser.add_argument('--beta_temporal', type=float, default=0.0)
+    
     args = parser.parse_args()
 
     torch.manual_seed(1234)

@@ -80,7 +80,7 @@ def fetch_optimizer(args, model):
     """ Create the optimizer and learning rate scheduler """
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
 
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=767,
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=943,
         pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
@@ -232,7 +232,7 @@ def train(args):
                 break
         
 
-    PATH = 'checkpoints/%s.pth' % args.name
+    PATH = 'new_checkpoints/%s.pth' % args.name
     torch.save(model.state_dict(), PATH)
 
     return PATH

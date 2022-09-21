@@ -51,15 +51,19 @@ class ACDCDataset(data.Dataset):
     def image_normalization(self, image, scale=1):
         return scale * (image - np.min(image)) / (np.max(image) - np.min(image))
     
+    def tensor_normalization(self, tnsr):
+        return (tnsr - torch.min(tnsr)) / (torch.max(tnsr) - torch.min(tnsr))
+    
     def get_item_from_index(self, index):
+        
         seq_path = self.seq_f_list[index]
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
-
-        if (self.add_normalisation):
-            seq = self.image_normalization(seq)
+        
+        #seq = self.image_normalization(seq)
         
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
+        
         if (seq_tensor.shape[0] > self.max_seq_len):
             seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
 
@@ -70,6 +74,10 @@ class ACDCDataset(data.Dataset):
         if (h == 424 or w == 512):
             print(self.folder_path+self.mode+"/"+seq_path)
         template_seq = template.repeat(seq_length, 1, 1)
+        
+        if (self.add_normalisation):
+            seq_tensor = self.tensor_normalization(seq_tensor)
+            template_seq = self.tensor_normalization(template_seq)
         patient_slice_id = seq_path.split(".")[0] # remove .nii.gz
         return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8], patient_slice_id
 

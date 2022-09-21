@@ -80,7 +80,7 @@ def fetch_optimizer(args, model):
     """ Create the optimizer and learning rate scheduler """
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
 
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=943,
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=767,
         pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
@@ -216,23 +216,23 @@ def train(args):
             wandb.log({"Validation Total Loss": val_loss_dict["Total"]})
             wandb.log({"Validation Error": val_loss_dict["Error"]})
 
-            # Log every epoch
-            PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
-            torch.save(model.module.state_dict(), PATH)
+        # Log every epoch
+        PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
+        torch.save(model.module.state_dict(), PATH)
 
-            #logger.write_dict(results)
-            model.train()
-            if args.stage != 'chairs':
-                model.module.freeze_bn()
+        #logger.write_dict(results)
+        model.train()
+        if args.stage != 'chairs':
+            model.module.freeze_bn()
     
-            total_steps += 1 # Num of epochs
+        total_steps += 1 # Num of epochs
 
-            if total_steps >= args.num_steps:
-                should_keep_training = False
-                break
+        if total_steps >= args.num_steps:
+            should_keep_training = False
+            break
         
 
-    PATH = 'new_checkpoints/%s.pth' % args.name
+    PATH = 'checkpoints/%s.pth' % args.name
     torch.save(model.state_dict(), PATH)
 
     return PATH

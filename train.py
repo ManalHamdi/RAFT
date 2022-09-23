@@ -232,7 +232,7 @@ def train(args):
             break
         
 
-    PATH = 'checkpoints/%s.pth' % args.name
+    PATH = 'new_checkpoints/%s.pth' % args.name
     torch.save(model.state_dict(), PATH)
 
     return PATH

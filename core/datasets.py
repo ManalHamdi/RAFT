@@ -51,11 +51,18 @@ class ACDCDataset(data.Dataset):
     def image_normalization(self, image, scale=1):
         return scale * (image - np.min(image)) / (np.max(image) - np.min(image))
     
-    def tensor_normalization(self, tnsr):
+    def tensor_normalization(self, tnsr, mode):
+        '''
+        if (mode == 'training'):
+            max_ = 4095
+        elif (mode == 'validation'):
+            max_ = 1871
+        min_ = 0
+        return (tnsr - min_) / (max_ - min_)
+        '''
         return (tnsr - torch.min(tnsr)) / (torch.max(tnsr) - torch.min(tnsr))
     
     def get_item_from_index(self, index):
-        
         seq_path = self.seq_f_list[index]
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
         
@@ -76,8 +83,8 @@ class ACDCDataset(data.Dataset):
         template_seq = template.repeat(seq_length, 1, 1)
         
         if (self.add_normalisation):
-            seq_tensor = self.tensor_normalization(seq_tensor)
-            template_seq = self.tensor_normalization(template_seq)
+            seq_tensor = self.tensor_normalization(seq_tensor, self.mode)
+            template_seq = self.tensor_normalization(template_seq, self.mode)
         patient_slice_id = seq_path.split(".")[0] # remove .nii.gz
         return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8], patient_slice_id
 

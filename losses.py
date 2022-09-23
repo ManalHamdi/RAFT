@@ -60,8 +60,10 @@ def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, 
     error = torch.abs(img_pred - img_gt)
     i7 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
 
-    if (add_normalisation):
-        scale = 255
+    if (add_normalisation and mode == 'training'):
+        scale = 4095
+    elif (add_normalisation and mode == 'validation'):
+        scale = 1871
     else:
         scale = 1
     

@@ -3,6 +3,9 @@
 '''
 import torch
 import random
+from sklearn.preprocessing import StandardScaler
+import numpy as np
+from sklearn.decomposition import PCA
 
 def generate_image(img_batch, template_batch, flow1, flow2):
     '''img and temp [N, H, W]
@@ -38,9 +41,8 @@ def generate_template(frame_seq, mode):
         print("This mode", mode, "is not supported for template generation.")
 
 def construct_template_pca(seq):
-    '''seq is a tensor with shape [N, H, W]'''
+    '''seq is a tensor with shape [B, N, H, W]'''
     s_len, h, w = seq.shape
-    
     seq = seq[:,:,:].numpy() #[N, H, W]
     # Flatten the images in the seq 
     seq_flat = np.zeros((s_len, h*w)) # [5000, 15]

@@ -33,15 +33,15 @@ def generate_template(frame_seq, mode):
             '''Input [N, H, W] Returns tensor [H, W]'''
             return frame_seq.mean(dim=0)
     elif (mode == "pca"):
-        return construct_template_pca(frame_seq, 0.9)
+        return construct_template_pca(frame_seq)
     else:
         print("This mode", mode, "is not supported for template generation.")
 
-def construct_template_pca(seq, lvl_conf):
-    '''seq is a tensor with shape [B, N, H, W]'''
-    b, s_len, h, w = seq.shape
-    assert b == 1
-    seq = seq[0,:,:,:].numpy() #[N, H, W]
+def construct_template_pca(seq):
+    '''seq is a tensor with shape [N, H, W]'''
+    s_len, h, w = seq.shape
+    
+    seq = seq[:,:,:].numpy() #[N, H, W]
     # Flatten the images in the seq 
     seq_flat = np.zeros((s_len, h*w)) # [5000, 15]
 

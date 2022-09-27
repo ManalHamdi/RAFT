@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
 import datasets
+import flow_vis
 from utils import flow_viz
 from utils import frame_utils
 import core.sequence_handling_utils as seq_utils
@@ -154,42 +155,74 @@ def validate_acdc(model, args, mode, epoch, iters=2):
     print("Validation ACDC: %f" % (total_loss))
     print("Validation Error ACDC: %f" % (total_error))
     return val_dict
+
+@torch.no_grad()
+def log_gifs_test(image_batch, template_batch, temp_pred, flow_pred_fwd, flow_pred_bwd, patient_name, add_normalisation):
+    total_iter = len(flow_forward)
+    b, s, _, h, w = flow_forward[0].shape
+    # img pred consec
+    img_consec = seq_utils.warp_batch(temp_pred[:,0:s-1,:,:], flow_pred_bwd[iters-1][:,1:s,:,:,:], gpu=args.gpus[0])
+    i1 = img_consec.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+    # error consec
+    error = torch.abs(img_consec - img_gt[:,1:s,:,:])
+    i2 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+    if (add_normalisation):
+        scale = 255
+    else:
+        scale = 1
     
+    wandb.log({"GIF " + mode + " " + patient_name + " ": [
+                                                    wandb.Video(i1*scale, fps=2, caption="Consecutive Image Pred" , format="gif"),
+                                                    wandb.Video(i2*scale, fps=2, caption="Consecutive Error" , format="gif")]})
+@torch.no_grad()
+def log_additional_flow(flow_pred_fwd, flow_pred_bwd):
+    iters = len(flow_pred_fwd)
+    flow_1_2 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,2,:,:,:]
+    flow_1_6 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,6,:,:,:]
+    
+    flow_1_2 = flow_vis.flow_to_color(flow_1_2.permute(1,2,0).cpu().detach().numpy())
+    flow_1_6 = flow_vis.flow_to_color(flow_1_6.permute(1,2,0).cpu().detach().numpy())
+    wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(flow_for, caption=patient_name + " Flow 1->2"),
+                                                      wandb.Image(flow_back, caption=patient_name + " Flow 1->6")]})
+
 @torch.no_grad()
 def test_acdc(args):
     wandb.init(project="test-project", entity="manalteam")
-    
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
     model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
-    
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.eval()
-    
+    mode = 'testing'
     iters = 2
 
     test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
     
     all_seq_error = 0
     for test_id in range(0, len(val_dataset)):
-        image_batch, template_batch, patient_slice_id_batch = test_dataset[test_id]
+        image_batch, template_batch, patient_slice_id_batch = test_dataset[test_id] # [B, S, H, W]
         image_batch = image_batch[None].to(cuda_to_use)
         template_batch = template_batch[None].to(cuda_to_use)
         flow_pred_fwd, flow_pred_bwd = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
         
-        flow_1_2 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,2,:,:,:]
-        flow_1_6 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,6,:,:,:]
-        '''
-        if ():
-            log_gifs(image_batch, img_pred, 
-                         template_batch, temp_pred, 
-                         flow_pred_fwd, flow_pred_bwd, 
-                         patient_slice_id_gt[0], mode, args.add_normalisation)
-        '''
+        
+        
         # Here we have sequences, it should become all combination of pairs
         _, len_s, h, w = image_batch.shape
         
         template_prime = seq_utils.warp_batch(image_batch, flow_pred_fwd[iters-1], gpu=args.gpus[0])
+        
+        if (patient_slice_id_batch == ''):
+            Losses.log_images(img_gt[0,3,:,:], img_pred[0,3,:,:], template_batch[0,3,:,:], template_prime[0,3,:,:], 
+                       flow_pred_fwd, flow_pred_bwd, 3, patient_slice_id_gt[0], mode)
+            Losses.log_gifs(image_batch, img_pred, 
+                         template_prime, temp_pred, 
+                         flow_pred_fwd, flow_pred_bwd, 
+                         patient_slice_id_gt[0], mode, args.add_normalisation)
+            log_gifs_test(image_batch, template_batch, template_prime, 
+                          flow_pred_fwd, flow_pred_bwd, patient_slice_id_gt[0], args.add_normalisation)
+            log_additional_flow(flow_pred_fwd, flow_pred_bwd)
+        
         
         error_seq = 0
         for i in range(0, len_s):

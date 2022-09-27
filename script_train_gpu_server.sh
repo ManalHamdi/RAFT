@@ -12,5 +12,5 @@
 module load python/anaconda3
 conda activate raft
 mkdir -p checkpoints
-/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u train.py --name noNorm_19_1photo_10spa_0temp --stage acdc --validation acdc --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/" --num_steps 200 --gpus 1 --batch_size 1 --lr 0.0004 --wdecay 0.0001 --max_seq_len 19 --beta_photo 1 --beta_spatial 10.0 --beta_temporal 0.0 #--restore_ckpt "checkpoints/1_raft-acdc.pth" --add_normalisation
+/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u train.py --name PCA_noNorm_19_1photo_10spa_10temp --stage acdc --validation acdc --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/" --num_steps 200 --gpus 0 --batch_size 1 --lr 0.0004 --wdecay 0.0001 --max_seq_len 19 --beta_photo 1 --beta_spatial 10.0 --beta_temporal 10.0 #--restore_ckpt "checkpoints/1_raft-acdc.pth" --add_normalisation
  

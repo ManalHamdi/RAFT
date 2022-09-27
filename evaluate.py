@@ -129,7 +129,7 @@ def validate_sintel(model, iters=32):
     return results
 
 @torch.no_grad()
-def validate_acdc(model, args, epoch, mode, iters=2):
+def validate_acdc(model, args, mode, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.eval()
@@ -155,6 +155,57 @@ def validate_acdc(model, args, epoch, mode, iters=2):
     print("Validation Error ACDC: %f" % (total_error))
     return val_dict
     
+@torch.no_grad()
+def test_acdc(args):
+    wandb.init(project="test-project", entity="manalteam")
+    
+    model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
+    print("Parameter Count: %d" % count_parameters(model))
+    model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
+    
+    cuda_to_use = "cuda:" + str(args.gpus[0])
+    model.eval()
+    
+    iters = 2
+
+    test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
+    
+    all_seq_error = 0
+    for test_id in range(0, len(val_dataset)):
+        image_batch, template_batch, patient_slice_id_batch = test_dataset[test_id]
+        image_batch = image_batch[None].to(cuda_to_use)
+        template_batch = template_batch[None].to(cuda_to_use)
+        flow_pred_fwd, flow_pred_bwd = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
+        
+        flow_1_2 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,2,:,:,:]
+        flow_1_6 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,6,:,:,:]
+        '''
+        if ():
+            log_gifs(image_batch, img_pred, 
+                         template_batch, temp_pred, 
+                         flow_pred_fwd, flow_pred_bwd, 
+                         patient_slice_id_gt[0], mode, args.add_normalisation)
+        '''
+        # Here we have sequences, it should become all combination of pairs
+        _, len_s, h, w = image_batch.shape
+        
+        template_prime = seq_utils.warp_batch(image_batch, flow_pred_fwd[iters-1], gpu=args.gpus[0])
+        
+        error_seq = 0
+        for i in range(0, len_s):
+            # Ii->n to all images
+            template_i_prime = template_prime[0,i,:,:].repeat() # [H, W] --> [B, S, H, W]
+            image_prime = seq_utils.warp_batch(template_i_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
+            l1_loss = torch.nn.L1Loss()
+            error_seq += l1_loss(image_prime, image_batch)
+                
+        error_seq /= len_s
+        print("Error of seq ", patient_slice_id_batch, "made of all pairs", error_seq)
+        all_seq_error += error_seq
+    all_seq_error /= len_s     
+    print("Error of All sequences is ", all_seq_error)
+        
+        
 
 @torch.no_grad()
 def validate_kitti(model, iters=24):
@@ -209,16 +260,15 @@ if __name__ == '__main__':
     parser.add_argument('--max_seq_len', type=int, default=35)
     parser.add_argument('--beta_photo', type=float, default=1.0)
     parser.add_argument('--beta_spatial', type=float, default=0.0)
-    parser.add_argument('--beta_temporal', type=float, default=0.0)
     
     args = parser.parse_args()
-
+    '''
     model = torch.nn.DataParallel(RAFT(args))
     model.load_state_dict(torch.load(args.model))
 
     model.cuda()
     model.eval()
-
+    '''
     # create_sintel_submission(model.module, warm_start=True)
     # create_kitti_submission(model.module)
 
@@ -232,6 +282,5 @@ if __name__ == '__main__':
         elif args.dataset == 'kitti':
             validate_kitti(model.module)
         elif args.dataset == 'acdc':
-            validate_acdc(model.module, args, 1, mode='testing', iters=2)
-
+            test_acdc(model.module, args)
 

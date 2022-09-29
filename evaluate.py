@@ -10,7 +10,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-
+import wandb
+import torch.nn as nn
 import datasets
 import flow_vis
 from utils import flow_viz
@@ -158,13 +159,15 @@ def validate_acdc(model, args, mode, epoch, iters=2):
 
 @torch.no_grad()
 def log_gifs_test(image_batch, template_batch, temp_pred, flow_pred_fwd, flow_pred_bwd, patient_name, add_normalisation):
-    total_iter = len(flow_forward)
-    b, s, _, h, w = flow_forward[0].shape
+    total_iter = len(flow_pred_fwd)
+    b, s, _, h, w = flow_pred_fwd[0].shape
+    iters = 2
+    mode = 'testing'
     # img pred consec
     img_consec = seq_utils.warp_batch(temp_pred[:,0:s-1,:,:], flow_pred_bwd[iters-1][:,1:s,:,:,:], gpu=args.gpus[0])
     i1 = img_consec.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
     # error consec
-    error = torch.abs(img_consec - img_gt[:,1:s,:,:])
+    error = torch.abs(img_consec - image_batch[:,1:s,:,:])
     i2 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
     if (add_normalisation):
         scale = 255
@@ -175,23 +178,30 @@ def log_gifs_test(image_batch, template_batch, temp_pred, flow_pred_fwd, flow_pr
                                                     wandb.Video(i1*scale, fps=2, caption="Consecutive Image Pred" , format="gif"),
                                                     wandb.Video(i2*scale, fps=2, caption="Consecutive Error" , format="gif")]})
 @torch.no_grad()
-def log_additional_flow(flow_pred_fwd, flow_pred_bwd):
+def log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_name):
+    mode = 'testing'
     iters = len(flow_pred_fwd)
     flow_1_2 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,2,:,:,:]
     flow_1_6 = flow_pred_fwd[iters-1][0,1,:,:,:] + flow_pred_bwd[iters-1][0,6,:,:,:]
     
+    flow_for = flow_vis.flow_to_color(flow_pred_fwd[iters-1][0,2,:,:,:].permute(1,2,0).cpu().detach().numpy())
+
+    print("mine, orig", flow_1_2.shape, flow_pred_fwd[iters-1][0,2,:,:,:].shape)
+    
+    print("Shape all", flow_for.shape)
     flow_1_2 = flow_vis.flow_to_color(flow_1_2.permute(1,2,0).cpu().detach().numpy())
     flow_1_6 = flow_vis.flow_to_color(flow_1_6.permute(1,2,0).cpu().detach().numpy())
-    wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(flow_for, caption=patient_name + " Flow 1->2"),
-                                                      wandb.Image(flow_back, caption=patient_name + " Flow 1->6")]})
+    wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(flow_1_2, caption=patient_name + " Flow 1->2"),
+                                                      wandb.Image(flow_1_6, caption=patient_name + " Flow 1->6")]})
 
 @torch.no_grad()
 def test_acdc(args):
+    print("We are in!")
     wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
-    print("Parameter Count: %d" % count_parameters(model))
-    model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
+    model.load_state_dict(torch.load(args.restore_ckpt, map_location=torch.device('cpu')), strict=False)
     cuda_to_use = "cuda:" + str(args.gpus[0])
+    model.to(cuda_to_use)
     model.eval()
     mode = 'testing'
     iters = 2
@@ -199,35 +209,34 @@ def test_acdc(args):
     test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
     
     all_seq_error = 0
-    for test_id in range(0, len(val_dataset)):
+    for test_id in range(0, len(test_dataset)):
+        print(test_id)
         image_batch, template_batch, patient_slice_id_batch = test_dataset[test_id] # [B, S, H, W]
         image_batch = image_batch[None].to(cuda_to_use)
         template_batch = template_batch[None].to(cuda_to_use)
         flow_pred_fwd, flow_pred_bwd = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
-        
-        
-        
+
         # Here we have sequences, it should become all combination of pairs
         _, len_s, h, w = image_batch.shape
         
         template_prime = seq_utils.warp_batch(image_batch, flow_pred_fwd[iters-1], gpu=args.gpus[0])
-        
-        if (patient_slice_id_batch == ''):
-            Losses.log_images(img_gt[0,3,:,:], img_pred[0,3,:,:], template_batch[0,3,:,:], template_prime[0,3,:,:], 
-                       flow_pred_fwd, flow_pred_bwd, 3, patient_slice_id_gt[0], mode)
-            Losses.log_gifs(image_batch, img_pred, 
-                         template_prime, temp_pred, 
+        img_pred = seq_utils.warp_batch(template_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
+        #if (patient_slice_id_batch == ''):
+        Losses.log_images(image_batch[0,2,:,:], img_pred[0,2,:,:], template_batch[0,2,:,:], template_prime[0,2,:,:], 
+                       flow_pred_fwd, flow_pred_bwd, 2, patient_slice_id_batch, mode)
+        Losses.log_gifs(image_batch, img_pred, 
+                         template_batch, template_prime, 
                          flow_pred_fwd, flow_pred_bwd, 
-                         patient_slice_id_gt[0], mode, args.add_normalisation)
-            log_gifs_test(image_batch, template_batch, template_prime, 
-                          flow_pred_fwd, flow_pred_bwd, patient_slice_id_gt[0], args.add_normalisation)
-            log_additional_flow(flow_pred_fwd, flow_pred_bwd)
+                         patient_slice_id_batch, mode, args.add_normalisation)
+        log_gifs_test(image_batch, template_batch, template_prime, 
+                          flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch, args.add_normalisation)
+        log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch)
         
         
         error_seq = 0
         for i in range(0, len_s):
             # Ii->n to all images
-            template_i_prime = template_prime[0,i,:,:].repeat() # [H, W] --> [B, S, H, W]
+            template_i_prime = template_prime[0,i,:,:].repeat(len_s,1,1).repeat(1,1,1,1) # [H, W] --> [B, S, H, W]
             image_prime = seq_utils.warp_batch(template_i_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
             l1_loss = torch.nn.L1Loss()
             error_seq += l1_loss(image_prime, image_batch)
@@ -278,7 +287,6 @@ def validate_kitti(model, iters=24):
     print("Validation KITTI: %f, %f" % (epe, f1))
     return {'kitti-epe': epe, 'kitti-f1': f1}
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', help="restore checkpoint")
@@ -286,14 +294,14 @@ if __name__ == '__main__':
     parser.add_argument('--small', action='store_true', help='use small model')
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
     parser.add_argument('--alternate_corr', action='store_true', help='use efficent correlation implementation')
-    
+    parser.add_argument('--restore_ckpt', help="restore checkpoint")
     parser.add_argument('--gpus', type=int, nargs='+', default=[0,1])
     parser.add_argument('--gamma', type=float, default=0.8, help='exponential weighting')
     parser.add_argument('--dataset_folder', type=str)
     parser.add_argument('--max_seq_len', type=int, default=35)
-    parser.add_argument('--beta_photo', type=float, default=1.0)
-    parser.add_argument('--beta_spatial', type=float, default=0.0)
-    
+    parser.add_argument('--batch_size', type=int, default=1)
+    parser.add_argument('--add_normalisation', action='store_true')
+
     args = parser.parse_args()
     '''
     model = torch.nn.DataParallel(RAFT(args))
@@ -315,5 +323,5 @@ if __name__ == '__main__':
         elif args.dataset == 'kitti':
             validate_kitti(model.module)
         elif args.dataset == 'acdc':
-            test_acdc(model.module, args)
+            test_acdc(args)
 

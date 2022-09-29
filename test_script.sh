@@ -11,5 +11,6 @@ module load python/anaconda3
 conda deactivate
 conda activate raftkevin
 echo "Activated raftkevin"
+
 mkdir -p checkpoints
-python3 -u evaluate.py --name testing --stage acdc --validation acdc --dataset_folder "/home/kevin/manal/RAFT/datasets/ACDC_processed/" --num_steps 1 --gpus 1 --batch_size 1 --lr 0.0004 --wdecay 0.0001 --max_seq_len 10 --gamma 0.8 --beta_photo 1.0 --beta_spatial 10.0 --beta_temporal 10.0 --restore_ckpt "new_checkpoints/raft-acdc.pth.pth"
+python3 -u evaluate.py --dataset 'acdc' --dataset_folder "/home/kevin/manal/RAFT/datasets/ACDC_processed/"  --gpus 1 --batch_size 1  --max_seq_len 8 --gamma 0.8 --restore_ckpt "checkpoints/229_noNorm_1photo10spa0temp.pth"

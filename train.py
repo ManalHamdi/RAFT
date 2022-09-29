@@ -6,7 +6,7 @@ sys.path.append('core')
 
 import argparse
 import os
-import cv2
+#import cv2
 import time
 import numpy as np
 import matplotlib.pyplot as plt

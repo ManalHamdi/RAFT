@@ -13,4 +13,4 @@ conda activate raftkevin
 echo "Activated raftkevin"
 
 mkdir -p checkpoints
-python3 -u evaluate.py --dataset 'acdc' --dataset_folder "/home/kevin/manal/RAFT/datasets/ACDC_processed/"  --gpus 1 --batch_size 1  --max_seq_len 8 --gamma 0.8 --restore_ckpt "checkpoints/229_noNorm_1photo10spa0temp.pth"
+python3 -u evaluate.py --dataset 'acdc' --dataset_folder "/home/kevin/manal/RAFT/datasets/ACDC_processed/"  --gpus 1 --batch_size 1  --max_seq_len 8 --gamma 0.8 --restore_ckpt "checkpoints/ 200_noNorm_19_all.pth"

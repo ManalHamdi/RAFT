@@ -80,7 +80,7 @@ def fetch_optimizer(args, model):
     """ Create the optimizer and learning rate scheduler """
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
 
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=767,
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=943,
         pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
@@ -142,9 +142,10 @@ def train(args):
     wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
-
-    if args.restore_ckpt is not None:
-        model.load_state_dict(torch.load(args.restore_ckpt), strict=False)
+    
+    epoch = 0
+    last_epoch = args.num_steps - 1
+    
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.to(cuda_to_use)
     model.train()
@@ -155,18 +156,31 @@ def train(args):
     train_loader = datasets.fetch_dataloader(args)
     optimizer, scheduler = fetch_optimizer(args, model)
 
-    total_steps = 0
     scaler = GradScaler(enabled=args.mixed_precision)
 
     VAL_FREQ = 10 #5000
     add_noise = False
-
+    
+    if args.restore_ckpt is not None:
+        print("Found Checkpoint: ", args.restore_ckpt)
+        ckpt = torch.load(args.restore_ckpt)
+        epoch = ckpt['epoch'] + 1
+        model.load_state_dict(ckpt['model'], strict=False)
+        optimizer.load_state_dict(ckpt['optimizer'])
+        scheduler.load_state_dict(ckpt['scheduler'])
+        last_epoch = epoch + args.num_steps - 1
+        print("I am loading an existing model from", args.restore_ckpt, "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
+        
+    experiment_dir = 'october_checkpoints/%s'% (args.name)
+    os.mkdir(experiment_dir)
+    print("I created the exp dir", experiment_dir)
+    
     should_keep_training = True
     while should_keep_training:
         loss_epoch, error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] # old [B, C, H, W] new [B, N, H, W], [B, N, H, W]
+            image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
             image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
             if args.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
@@ -178,7 +192,7 @@ def train(args):
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
             batch_loss_dict = Losses.disimilarity_loss(image_batch, template_batch, patient_slice_id_batch,
                                                               flow_predictions1, flow_predictions2, 
-                                                              epoch=total_steps, mode="training", 
+                                                              epoch=epoch, mode="training", 
                                                               i_batch=i_batch, args=args) 
             scaler.scale(batch_loss_dict["Total"]).backward()
            
@@ -199,10 +213,11 @@ def train(args):
         wandb.log({"Training Spatial Loss": spa_epoch})
         wandb.log({"Training Temporal Loss": temp_epoch})
         
-        print("Epoch:", total_steps, "training loss", loss_epoch)
-        print("Epoch:", total_steps, "training error", error_epoch)
+        print("Epoch:", epoch, "training loss", loss_epoch)
+        print("Epoch:", epoch, "training error", error_epoch)
         # VALIDATION
         results = {}
+        val_loss_dict = {}
         for val_dataset in args.validation:
             if val_dataset == 'chairs':
                 results.update(evaluate.validate_chairs(model.module))
@@ -211,29 +226,49 @@ def train(args):
             elif val_dataset == 'kitti':
                 results.update(evaluate.validate_kitti(model.module))
             elif val_dataset == 'acdc':
-                val_loss_dict = evaluate.validate_acdc(model.module, args, epoch=total_steps, mode='validation')
+                val_loss_dict = evaluate.validate_acdc(model.module, args, epoch=epoch, mode='validation')
 
             wandb.log({"Validation Total Loss": val_loss_dict["Total"]})
             wandb.log({"Validation Error": val_loss_dict["Error"]})
 
         # Log every epoch
-        PATH = 'checkpoints/%d_%s.pth' % (total_steps+1, args.name)
-        torch.save(model.module.state_dict(), PATH)
+        if (epoch % 2 == 0):
+            PATH = '%s_%d.pth' % (args.name, epoch)
+            print("Should save", PATH)
+            torch.save({'epoch' : epoch,
+                        'model' : model.module.state_dict(),
+                        'optimizer': optimizer.state_dict(),
+                        'scheduler': scheduler.state_dict(),
+                        'validation_loss' : val_loss_dict["Total"],
+                        'validation_error' : val_loss_dict["Error"],
+                        'train_loss' : loss_epoch,
+                        'train_error' : error_epoch},
+                       f'{experiment_dir}/{PATH}')
 
-        #logger.write_dict(results)
         model.train()
         if args.stage != 'chairs':
             model.module.freeze_bn()
     
-        total_steps += 1 # Num of epochs
+        epoch += 1 # Num of epochs
 
-        if total_steps >= args.num_steps:
+        if epoch > last_epoch:
             should_keep_training = False
             break
-        
 
-    PATH = 'new_checkpoints/%s.pth' % args.name
-    torch.save(model.state_dict(), PATH)
+    
+    model_dir = 'mymodels/%s'% (args.name)
+    os.mkdir(model_dir)
+    print("I created model dir", model_dir)
+    PATH =  '%s_%d.pth' % (args.name, epoch-1)
+    torch.save({'epoch' : epoch-1,
+                'model' : model.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+                'validation_loss' : val_loss_dict["Total"],
+                'validation_error' : val_loss_dict["Error"],
+                'train_loss' : loss_epoch,
+                'train_error' : error_epoch}, 
+               f'{model_dir}/{PATH}')
 
     return PATH
 

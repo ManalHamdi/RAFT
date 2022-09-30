@@ -204,7 +204,7 @@ def test_acdc(args):
     model.to(cuda_to_use)
     model.eval()
     mode = 'testing'
-    iters = 2
+    iters = 6
 
     test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
     
@@ -222,8 +222,8 @@ def test_acdc(args):
         template_prime = seq_utils.warp_batch(image_batch, flow_pred_fwd[iters-1], gpu=args.gpus[0])
         img_pred = seq_utils.warp_batch(template_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
         #if (patient_slice_id_batch == ''):
-        Losses.log_images(image_batch[0,2,:,:], img_pred[0,2,:,:], template_batch[0,2,:,:], template_prime[0,2,:,:], 
-                       flow_pred_fwd, flow_pred_bwd, 2, patient_slice_id_batch, mode)
+        Losses.log_images(image_batch[0,3,:,:], img_pred[0,3,:,:], template_batch[0,3,:,:], template_prime[0,3,:,:], 
+                       flow_pred_fwd, flow_pred_bwd, 3, patient_slice_id_batch, mode)
         Losses.log_gifs(image_batch, img_pred, 
                          template_batch, template_prime, 
                          flow_pred_fwd, flow_pred_bwd, 

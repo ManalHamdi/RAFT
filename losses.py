@@ -30,7 +30,7 @@ def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward
     
     wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(img_gt, caption=patient_name + " Image GT"), 
                                                       wandb.Image(img_pred, caption=patient_name + " Image Pred"),
-                                                      wandb.Image(error, caption=patient_name + " Error"),
+                                                      wandb.Image(error, caption=patient_name + " Img Error"),
                                                       wandb.Image(temp_gt, caption=patient_name + " Template GT"),
                                                       wandb.Image(temp_pred, caption=patient_name + " Template Pred"),
                                                       wandb.Image(flow_for, caption=patient_name + " Forward Flow"),
@@ -71,7 +71,7 @@ def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, 
                                                           wandb.Video(i4*scale, fps=2, caption="Template pred" , format="gif"),
                                                           wandb.Video(i5*scale, fps=2, caption="Forward Flow" , format="gif"),
                                                           wandb.Video(i6*scale, fps=2, caption="Backward Flow" , format="gif"),
-                                                          wandb.Video(i7*scale, fps=2, caption="Error" , format="gif")]})
+                                                          wandb.Video(i7*scale, fps=2, caption="Img Error" , format="gif")]})
     
 def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
     '''
@@ -83,7 +83,10 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
     '''
     partial_loss = 0
     total_iter = len(flow_forward)
-    partial_error = 0
+    
+    partial_temp_error = 0
+    partial_img_error = 0
+    
     partial_spatial_loss = 0
     partial_temporal_loss = 0
     partial_photo_loss = 0
@@ -91,9 +94,9 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
     for itr in range(0, total_iter):
         temp_pred = seq_utils.warp_batch(img_gt, flow_forward[itr], gpu=args.gpus[0]) # [B, N, H, W]
         img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr], gpu=args.gpus[0]) # [B, N, H, W]
-        
         l1_loss = torch.nn.L1Loss()
-        partial_error += l1_loss(temp_pred, temp_gt) + l1_loss(img_pred, img_gt)
+        partial_temp_error += l1_loss(temp_pred, temp_gt) 
+        partial_img_error += l1_loss(img_pred, img_gt)
         
         Charbonnier_Loss = CharbonnierLoss()
         photo_loss = Charbonnier_Loss(temp_pred, temp_gt) + Charbonnier_Loss(img_pred, img_gt) #[B, N] loss batch in iteration i
@@ -139,7 +142,8 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
                  "Photometric": partial_photo_loss / total_iter,
                  "Spatial": partial_spatial_loss / total_iter,
                  "Temporal": partial_temporal_loss / total_iter,
-                 "Error": partial_error / total_iter}
+                 "Img Error": partial_img_error / total_iter,
+                 "Temp Error": partial_temp_error / total_iter}
     
     return loss_dict  
             

@@ -15,4 +15,4 @@ conda activate raft
 echo "Activated raft"
 
 mkdir -p checkpoints
-python3 -u evaluate.py --dataset 'acdc' --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/"  --gpus 0 --batch_size 1  --max_seq_len 8 --gamma 0.8 --restore_ckpt "new_checkpoints/200_noNorm_19_all"
+python3 -u evaluate.py --dataset 'acdc' --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/"  --gpus 0 --batch_size 1  --max_seq_len 8 --gamma 0.8 --restore_ckpt "october_checkpoints/Avg_19_noNorm_full/Avg_19_noNorm_full_128.pth"

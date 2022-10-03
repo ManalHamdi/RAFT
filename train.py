@@ -84,59 +84,6 @@ def fetch_optimizer(args, model):
         pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
-    
-
-class Logger:
-    def __init__(self, model, scheduler):
-        self.model = model
-        self.scheduler = scheduler
-        self.total_steps = 0
-        self.running_loss = {}
-        self.writer = SummaryWriter()
-
-    def _print_training_status(self):
-        metrics_data = [self.running_loss[k]/SUM_FREQ for k in sorted(self.running_loss.keys())]
-        training_str = "[{:6d}, {:10.7f}] ".format(self.total_steps+1, self.scheduler.get_last_lr()[0])
-        metrics_str = ("{:10.4f}, "*len(metrics_data)).format(*metrics_data)
-        
-        # print the training status
-        print(training_str + metrics_str)
-
-        if self.writer is None:
-            self.writer = SummaryWriter()
-
-        for k in self.running_loss:
-            self.writer.add_scalar(k, self.running_loss[k]/SUM_FREQ, self.total_steps)
-            self.running_loss[k] = 0.0
-            
-    def add_image(self, description, image):
-        self.writer.add_image(description, image.view(1, image.shape[0], image.shape[1]), dataformats='CHW')
-        
-    def add_scalar(self, description, x, y):
-        self.writer.add_scalar(description, x, y)
-        
-    def push(self, metrics):
-        self.total_steps += 1
-
-        for key in metrics:
-            if key not in self.running_loss:
-                self.running_loss[key] = 0.0
-
-            self.running_loss[key] += metrics[key]
-
-        if self.total_steps % SUM_FREQ == SUM_FREQ-1:
-            self._print_training_status()
-            self.running_loss = {}
-
-    def write_dict(self, results):
-        if self.writer is None:
-            self.writer = SummaryWriter()
-
-        for key in results:
-            self.writer.add_scalar(key, results[key], self.total_steps)
-
-    def close(self):
-        self.writer.close()
 
 def train(args):
     wandb.init(project="test-project", entity="manalteam")
@@ -148,7 +95,6 @@ def train(args):
     
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.to(cuda_to_use)
-    model.train()
 
     if args.stage != 'chairs':
         model.module.freeze_bn()
@@ -165,19 +111,22 @@ def train(args):
         print("Found Checkpoint: ", args.restore_ckpt)
         ckpt = torch.load(args.restore_ckpt)
         epoch = ckpt['epoch'] + 1
-        model.load_state_dict(ckpt['model'], strict=False)
+        model.module.load_state_dict(ckpt['model'], strict=True)
         optimizer.load_state_dict(ckpt['optimizer'])
         scheduler.load_state_dict(ckpt['scheduler'])
         last_epoch = epoch + args.num_steps - 1
+        print(model.module.state_dict())
         print("I am loading an existing model from", args.restore_ckpt, "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
         
+    model.train()
+    
     experiment_dir = 'october_checkpoints/%s'% (args.name)
     os.mkdir(experiment_dir)
     print("I created the exp dir", experiment_dir)
     
     should_keep_training = True
     while should_keep_training:
-        loss_epoch, error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0
+        loss_epoch, tmp_error_epoch, img_error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
             image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
@@ -206,15 +155,18 @@ def train(args):
             loss_epoch += batch_loss_dict["Total"].item() / len(train_loader)
             spa_epoch += batch_loss_dict["Spatial"].item() / len(train_loader)
             temp_epoch += batch_loss_dict["Temporal"].item() / len(train_loader)
-            error_epoch += batch_loss_dict["Error"].item() / len(train_loader)
+            img_error_epoch += batch_loss_dict["Img Error"].item() / len(train_loader)
+            tmp_error_epoch += batch_loss_dict["Temp Error"].item() / len(train_loader)
             
         wandb.log({"Training Total Loss": loss_epoch})
-        wandb.log({"Training Error": error_epoch})
+        wandb.log({"Training Img Error": img_error_epoch})
+        wandb.log({"Training Tmp Error": tmp_error_epoch})
         wandb.log({"Training Spatial Loss": spa_epoch})
         wandb.log({"Training Temporal Loss": temp_epoch})
         
         print("Epoch:", epoch, "training loss", loss_epoch)
-        print("Epoch:", epoch, "training error", error_epoch)
+        print("Epoch:", epoch, "img training error", img_error_epoch)
+        print("Epoch:", epoch, "tmp training error", tmp_error_epoch)
         # VALIDATION
         results = {}
         val_loss_dict = {}
@@ -229,10 +181,11 @@ def train(args):
                 val_loss_dict = evaluate.validate_acdc(model.module, args, epoch=epoch, mode='validation')
 
             wandb.log({"Validation Total Loss": val_loss_dict["Total"]})
-            wandb.log({"Validation Error": val_loss_dict["Error"]})
+            wandb.log({"Img Validation Error": val_loss_dict["Img Error"]})
+            wandb.log({"Tmp Validation Error": val_loss_dict["Tmp Error"]})
 
         # Log every epoch
-        if (epoch % 2 == 0):
+        if (epoch % 1 == 0):
             PATH = '%s_%d.pth' % (args.name, epoch)
             print("Should save", PATH)
             torch.save({'epoch' : epoch,
@@ -240,10 +193,13 @@ def train(args):
                         'optimizer': optimizer.state_dict(),
                         'scheduler': scheduler.state_dict(),
                         'validation_loss' : val_loss_dict["Total"],
-                        'validation_error' : val_loss_dict["Error"],
+                        'validation_img_error' : val_loss_dict["Img Error"],
+                        'validation_tmp_error' : val_loss_dict["Tmp Error"],
                         'train_loss' : loss_epoch,
-                        'train_error' : error_epoch},
+                        'train_img_error' : img_error_epoch,
+                        'train_tmp_error' : tmp_error_epoch},
                        f'{experiment_dir}/{PATH}')
+            print(model.module.state_dict())
 
         model.train()
         if args.stage != 'chairs':
@@ -265,9 +221,11 @@ def train(args):
                 'optimizer': optimizer.state_dict(),
                 'scheduler': scheduler.state_dict(),
                 'validation_loss' : val_loss_dict["Total"],
-                'validation_error' : val_loss_dict["Error"],
+                'validation_img_error' : val_loss_dict["Img Error"],
+                'validation_tmp_error' : val_loss_dict["Temp Error"],
                 'train_loss' : loss_epoch,
-                'train_error' : error_epoch}, 
+                'img_train_error' : img_error_epoch,
+                'tmp_train_error' : tmp_error_epoch},
                f'{model_dir}/{PATH}')
 
     return PATH

@@ -138,7 +138,7 @@ def validate_acdc(model, args, mode, epoch, iters=2):
     val_dataset = datasets.ACDCDataset(args.dataset_folder, mode, args.max_seq_len, args.add_normalisation)
 
     out_list = []
-    total_loss, total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0
+    total_loss, img_total_error, tmp_total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0, 0
     for val_id in range(0, len(val_dataset)):
         image_batch, template_batch, patient_slice_id_batch = val_dataset[val_id]
         image_batch = image_batch[None].to(cuda_to_use)
@@ -150,11 +150,14 @@ def validate_acdc(model, args, mode, epoch, iters=2):
                                            i_batch=2, args=args) # -- loss in batch
 
         total_loss += batch_loss_dict["Total"].item() / len(val_dataset)
-        total_error += batch_loss_dict["Error"].item() / len(val_dataset)
+        img_total_error += batch_loss_dict["Img Error"].item() / len(val_dataset)
+        tmp_total_error += batch_loss_dict["Temp Error"].item() / len(val_dataset)
     val_dict = {"Total": total_loss,
-                "Error": total_error}
+                "Img Error": img_total_error,
+                "Tmp Error": tmp_total_error}
     print("Validation ACDC: %f" % (total_loss))
-    print("Validation Error ACDC: %f" % (total_error))
+    print("Validation Img Error ACDC: %f" % (img_total_error))
+    print("Validation Tmp Error ACDC: %f" % (tmp_total_error))
     return val_dict
 
 @torch.no_grad()
@@ -199,12 +202,19 @@ def test_acdc(args):
     print("We are in!")
     wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
-    model.load_state_dict(torch.load(args.restore_ckpt, map_location=torch.device('cpu')), strict=False)
-    cuda_to_use = "cuda:" + str(args.gpus[0])
-    model.to(cuda_to_use)
+    if args.restore_ckpt is not None:
+        print("Found Checkpoint: ", args.restore_ckpt)
+        ckpt = torch.load(args.restore_ckpt)
+        epoch = ckpt['epoch'] + 1
+        model.module.load_state_dict(ckpt['model'], strict=True)
+        last_epoch = epoch 
+        print("I am loading an existing model from", args.restore_ckpt, "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
+        
+    #model.load_state_dict(torch.load(args.restore_ckpt, map_location=torch.device('cpu')), strict=False)
     model.eval()
     mode = 'testing'
-    iters = 6
+    cuda_to_use = "cuda:" + str(args.gpus[0])
+    iters = 12
 
     test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
     

@@ -60,6 +60,9 @@ class ACDCDataset(data.Dataset):
         min_ = 0
         return (tnsr - min_) / (max_ - min_)
         '''
+        min_ = 0
+        max_ = 255
+        
         return (tnsr - torch.min(tnsr)) / (torch.max(tnsr) - torch.min(tnsr))
     
     def get_item_from_index(self, index):

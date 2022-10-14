@@ -41,9 +41,9 @@ def generate_template(frame_seq, mode):
         print("This mode", mode, "is not supported for template generation.")
 
 def construct_template_pca(seq):
-    '''seq is a tensor with shape [B, N, H, W]'''
+    '''seq is a tensor with shape [N, H, W]'''
     s_len, h, w = seq.shape
-    seq = seq[:,:,:].numpy() #[N, H, W]
+    seq = seq.numpy() #[N, H, W]
     # Flatten the images in the seq 
     seq_flat = np.zeros((s_len, h*w)) # [5000, 15]
 
@@ -51,15 +51,16 @@ def construct_template_pca(seq):
         seq_flat[i] = seq[i,:,:].flatten()
     seq_flat = np.transpose(seq_flat) #[h*w, s], each col represents an image
     sc = StandardScaler()
-    seq_flat = sc.fit_transform(seq_flat)
+    seq_flat = sc.fit_transform(seq_flat) # standarize and scale
     
     #pca = PCA(n_components=lvl_conf, svd_solver='full')
-    pca = PCA(1)
+    pca = PCA(n_components=1)
     
     seq_flat_transformed = pca.fit_transform(seq_flat)
     template = seq_flat_transformed.reshape(h, w)
     return torch.tensor(template)
- 
+    #return seq_flat_transformed
+    
 def warp_seq(x, flo, gpu=0):
     """
     @author: Jiazhen Pan

@@ -199,64 +199,94 @@ def log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_name):
 
 @torch.no_grad()
 def test_acdc(args):
-    print("We are in!")
+    f = open(args.output_file, "a")
+    f.write(args.name + "\n")
+
     wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     if args.restore_ckpt is not None:
-        print("Found Checkpoint: ", args.restore_ckpt)
+        f.write("Loading Checkpoint: " + str(args.restore_ckpt) + "\n")
         ckpt = torch.load(args.restore_ckpt)
         epoch = ckpt['epoch'] + 1
         model.module.load_state_dict(ckpt['model'], strict=True)
-        last_epoch = epoch 
-        print("I am loading an existing model from", args.restore_ckpt, "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
-        
-    #model.load_state_dict(torch.load(args.restore_ckpt, map_location=torch.device('cpu')), strict=False)
+    
     model.eval()
     mode = 'testing'
     cuda_to_use = "cuda:" + str(args.gpus[0])
-    iters = 12
+    iters = 2
 
     test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
     
     all_seq_error = 0
+    all_pair_error = 0
+    count_pair = 0
+    Img_err = 0
+        
     for test_id in range(0, len(test_dataset)):
-        print(test_id)
         image_batch, template_batch, patient_slice_id_batch = test_dataset[test_id] # [B, S, H, W]
         image_batch = image_batch[None].to(cuda_to_use)
         template_batch = template_batch[None].to(cuda_to_use)
         flow_pred_fwd, flow_pred_bwd = model(image_batch, template_batch, iters=iters, test_mode=True) #[B, 2, H, W]
-
-        # Here we have sequences, it should become all combination of pairs
+        
         _, len_s, h, w = image_batch.shape
         
         template_prime = seq_utils.warp_batch(image_batch, flow_pred_fwd[iters-1], gpu=args.gpus[0])
-        img_pred = seq_utils.warp_batch(template_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
-        #if (patient_slice_id_batch == ''):
-        Losses.log_images(image_batch[0,3,:,:], img_pred[0,3,:,:], template_batch[0,3,:,:], template_prime[0,3,:,:], 
-                       flow_pred_fwd, flow_pred_bwd, 3, patient_slice_id_batch, mode)
-        Losses.log_gifs(image_batch, img_pred, 
-                         template_batch, template_prime, 
-                         flow_pred_fwd, flow_pred_bwd, 
-                         patient_slice_id_batch, mode, args.add_normalisation)
-        log_gifs_test(image_batch, template_batch, template_prime, 
-                          flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch, args.add_normalisation)
-        log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch)
+        img_pred = seq_utils.warp_batch(template_batch, flow_pred_bwd[iters-1], gpu=args.gpus[0])
+        img_prime = seq_utils.warp_batch(template_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
         
+        l1_loss = torch.nn.L1Loss()
+        Img_err += l1_loss(image_batch, img_prime)
         
-        error_seq = 0
+        if (test_id % 5 == 0):
+            '''LOGGING'''
+            Losses.log_images(image_batch[0,3,:,:], img_pred[0,3,:,:], template_batch[0,3,:,:], template_prime[0,3,:,:], 
+                           flow_pred_fwd, flow_pred_bwd, 3, patient_slice_id_batch, mode)
+            wandb.log({patient_slice_id_batch + " "+ mode + " Images ": 
+                                           [wandb.Image(img_prime[0,3,:,:], caption=patient_slice_id_batch + " Image Prime")]})
+            Losses.log_gifs(image_batch, img_pred, 
+                             template_batch, template_prime, 
+                             flow_pred_fwd, flow_pred_bwd, 
+                             patient_slice_id_batch, mode, args.add_normalisation)
+            i2 = img_prime.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
+            wandb.log({"GIF " + mode + " " + patient_slice_id_batch + " ": 
+                       [wandb.Video(i2, fps=2, caption="Image Prime" , format="gif")]})
+
+            log_gifs_test(image_batch, template_batch, template_prime, 
+                              flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch, args.add_normalisation)
+            #log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch)
+
+        this_seq_pair_err = 0
+        
+        this_seq_count_pair = 0
         for i in range(0, len_s):
-            # Ii->n to all images
+            # img i --> temp' i --> image_prime (all)
             template_i_prime = template_prime[0,i,:,:].repeat(len_s,1,1).repeat(1,1,1,1) # [H, W] --> [B, S, H, W]
             image_prime = seq_utils.warp_batch(template_i_prime, flow_pred_bwd[iters-1], gpu=args.gpus[0])
-            l1_loss = torch.nn.L1Loss()
-            error_seq += l1_loss(image_prime, image_batch)
-                
-        error_seq /= len_s
-        print("Error of seq ", patient_slice_id_batch, "made of all pairs", error_seq)
-        all_seq_error += error_seq
-    all_seq_error /= len_s     
-    print("Error of All sequences is ", all_seq_error)
+            for s in range(0, len_s):
+                all_pair_error += l1_loss(image_prime[0,s,:,:], image_batch[0,s,:,:])
+                this_seq_pair_err += l1_loss(image_prime[0,s,:,:], image_batch[0,s,:,:])
+                count_pair += 1
+                this_seq_count_pair += 1
         
+        assert this_seq_count_pair == len_s * len_s
+        
+        this_seq_pair_err /= (len_s * len_s)
+        all_seq_error += this_seq_pair_err
+        f.write("Average Error of seq for "+str(patient_slice_id_batch)+" made of all pairs "+ str(this_seq_pair_err.item())+"\n")
+    all_seq_error /= len(test_dataset)
+    all_pair_error /= count_pair
+    Img_err /= len(test_dataset)
+    wandb.log({"Average pair error per sequence": all_seq_error})
+    wandb.log({"Average pair error": all_pair_error})
+    wandb.log({"Average sequence error": Img_err})
+    
+    f.write("---------------------------------------------\n")
+    f.write("Average pair error per sequence "+str(all_seq_error.item())+ "\n")
+    f.write("Average pair error "+str(all_pair_error.item()) + "\n")
+    f.write("Average sequence error "+str(Img_err.item()) + "\n")
+    f.write("*********************************************\n")
+    f.write("*********************************************\n")
+    f.close
         
 
 @torch.no_grad()
@@ -299,6 +329,7 @@ def validate_kitti(model, iters=24):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--name', help="name of experiment being evaluated")
     parser.add_argument('--model', help="restore checkpoint")
     parser.add_argument('--dataset', help="dataset for evaluation")
     parser.add_argument('--small', action='store_true', help='use small model')
@@ -311,6 +342,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_seq_len', type=int, default=35)
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--add_normalisation', action='store_true')
+    parser.add_argument('--output_file', type=str)
 
     args = parser.parse_args()
     '''

@@ -76,15 +76,30 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
-def fetch_optimizer(args, model):
+def fetch_optimizer(args, model, epochs_sofar=0, last_step=-1):
     """ Create the optimizer and learning rate scheduler """
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
-
-    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=943,
-        pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [100, 200], gamma=0.1, last_epoch=-1, verbose=False)
+    
+    #scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=epochs_sofar+args.num_steps, steps_per_epoch=943,
+    #   pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
 
+def save_model(epoch, model, optimizer, scheduler, val_loss_dict, loss_epoch, 
+               img_error_epoch, tmp_error_epoch, experiment_dir, PATH):
+    torch.save({'epoch' : epoch,
+                'model' : model.module.state_dict(),
+                'optimizer': optimizer.state_dict(),
+                'scheduler': scheduler.state_dict(),
+                'validation_loss' : val_loss_dict["Total"],
+                'validation_img_error' : val_loss_dict["Img Error"],
+                'validation_tmp_error' : val_loss_dict["Tmp Error"],
+                'train_loss' : loss_epoch,
+                'train_img_error' : img_error_epoch,
+                'train_tmp_error' : tmp_error_epoch},
+                     f'{experiment_dir}/{PATH}')
+    
 def train(args):
     wandb.init(project="test-project", entity="manalteam")
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
@@ -104,7 +119,7 @@ def train(args):
 
     scaler = GradScaler(enabled=args.mixed_precision)
 
-    VAL_FREQ = 10 #5000
+    VAL_FREQ = 10
     add_noise = False
     
     if args.restore_ckpt is not None:
@@ -112,11 +127,15 @@ def train(args):
         ckpt = torch.load(args.restore_ckpt)
         epoch = ckpt['epoch'] + 1
         model.module.load_state_dict(ckpt['model'], strict=True)
+        last_step_sched = 943 * epoch
+        optimizer, scheduler = fetch_optimizer(args, model, epochs_sofar=epoch, last_step=last_step_sched)
+        scheduler.last_epoch = last_step_sched
         optimizer.load_state_dict(ckpt['optimizer'])
         scheduler.load_state_dict(ckpt['scheduler'])
         last_epoch = epoch + args.num_steps - 1
-        print(model.module.state_dict())
-        print("I am loading an existing model from", args.restore_ckpt, "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
+        print("I am loading an existing model from", args.restore_ckpt, 
+              "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, 
+              "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
         
     model.train()
     
@@ -185,21 +204,11 @@ def train(args):
             wandb.log({"Tmp Validation Error": val_loss_dict["Tmp Error"]})
 
         # Log every epoch
-        if (epoch % 1 == 0):
+        if (epoch % 2 == 0):
             PATH = '%s_%d.pth' % (args.name, epoch)
             print("Should save", PATH)
-            torch.save({'epoch' : epoch,
-                        'model' : model.module.state_dict(),
-                        'optimizer': optimizer.state_dict(),
-                        'scheduler': scheduler.state_dict(),
-                        'validation_loss' : val_loss_dict["Total"],
-                        'validation_img_error' : val_loss_dict["Img Error"],
-                        'validation_tmp_error' : val_loss_dict["Tmp Error"],
-                        'train_loss' : loss_epoch,
-                        'train_img_error' : img_error_epoch,
-                        'train_tmp_error' : tmp_error_epoch},
-                       f'{experiment_dir}/{PATH}')
-            print(model.module.state_dict())
+            save_model(epoch, model, optimizer, scheduler, val_loss_dict, loss_epoch, 
+                       img_error_epoch, tmp_error_epoch, experiment_dir, PATH)
 
         model.train()
         if args.stage != 'chairs':
@@ -216,17 +225,8 @@ def train(args):
     os.mkdir(model_dir)
     print("I created model dir", model_dir)
     PATH =  '%s_%d.pth' % (args.name, epoch-1)
-    torch.save({'epoch' : epoch-1,
-                'model' : model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'scheduler': scheduler.state_dict(),
-                'validation_loss' : val_loss_dict["Total"],
-                'validation_img_error' : val_loss_dict["Img Error"],
-                'validation_tmp_error' : val_loss_dict["Temp Error"],
-                'train_loss' : loss_epoch,
-                'img_train_error' : img_error_epoch,
-                'tmp_train_error' : tmp_error_epoch},
-               f'{model_dir}/{PATH}')
+    save_model(epoch-1, model, optimizer, scheduler, val_loss_dict, loss_epoch, 
+               img_error_epoch, tmp_error_epoch, model_dir, PATH)
 
     return PATH
 
@@ -259,6 +259,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta_photo', type=float, default=1.0)
     parser.add_argument('--beta_spatial', type=float, default=0.0)
     parser.add_argument('--beta_temporal', type=float, default=0.0)
+    
     
     args = parser.parse_args()
 

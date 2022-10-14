@@ -27,7 +27,7 @@ def log_images(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward
     error = torch.abs(img_pred - img_gt)
     flow_for = flow_vis.flow_to_color(flow_forward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
     flow_back = flow_vis.flow_to_color(flow_backward[total_iter-1][0,index_slice,:,:,:].permute(1,2,0).cpu().detach().numpy())
-    
+
     wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(img_gt, caption=patient_name + " Image GT"), 
                                                       wandb.Image(img_pred, caption=patient_name + " Image Pred"),
                                                       wandb.Image(error, caption=patient_name + " Img Error"),
@@ -54,14 +54,14 @@ def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, 
         all_flows_bwd[frame_idx,:,:,:] =  np.transpose(flow_bwd, (2,0,1))
         frame_idx += 1
         
-    i5 = all_flows_bwd
+    i5 = all_flows_fwd
     i6 = all_flows_bwd
     
     error = torch.abs(img_pred - img_gt)
     i7 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
 
     if (add_normalisation):
-        scale = 255
+        scale = 1
     else:
         scale = 1
     

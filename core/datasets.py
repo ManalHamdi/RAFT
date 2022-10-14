@@ -62,8 +62,9 @@ class ACDCDataset(data.Dataset):
         '''
         min_ = 0
         max_ = 255
-        
-        return (tnsr - torch.min(tnsr)) / (torch.max(tnsr) - torch.min(tnsr))
+        tnsr_01 = (tnsr - torch.min(tnsr)) / (torch.max(tnsr) - torch.min(tnsr))
+        tnsr_norm = tnsr_01 * (max_ - min_) + min_
+        return tnsr_norm
     
     def get_item_from_index(self, index):
         seq_path = self.seq_f_list[index]
@@ -77,7 +78,7 @@ class ACDCDataset(data.Dataset):
         if (seq_tensor.shape[0] > self.max_seq_len):
             seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
 
-        template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
+        template = seq_utils.generate_template(seq_tensor, "pca") # tensor [H, W]
         seq_length = seq_tensor.shape[0]
         h = seq_tensor.shape[1]
         w = seq_tensor.shape[2]

@@ -35,10 +35,24 @@ def get_ACDC_temporal_seq(args, path_file, mode):
                 for t in range(0, T):
                     slice_ = volume[:, :, z, t].copy()
                     seq[:,:,t] = slice_
+                
+                idx_rnd = torch.randperm(t)
+                seq2 = torch.zeros_like(seq)
+                for i in range(0, t):
+                    seq2[:,:,i] = seq[:,:,idx_rnd[i]]
+                
+                for i in range(0, t):
+                    pair = np.empty([H, W, 2])
+                    pair[:,:,0] = seq[:,:,i]
+                    pair[:,:,1] = seq2[:,:,i]
+                    pair_filename = "pair" + str(i) + args.pair_folder + mode+'/patient'+patient_id+'_z_'+str(z)+'.nii.gz'
+                    nib_pair = nib.Nifti1Image(pair, np.eye(4))
+                    nib.save(nib_pair, pair_filename)
+                '''    
                 nib_seq = nib.Nifti1Image(seq, np.eye(4))
                 seq_filename = args.acdc_processed_folder + mode+'/patient'+patient_id+'_z_'+str(z)+'.nii.gz'
                 nib.save(nib_seq, seq_filename)
-
+                '''
                 if (line == 0 and z == 0): # for testing
                     volume_nib = nib.load(seq_filename).get_fdata() # Loads np array [H, W, Z, T]
                     assert volume_nib.all() == seq.all(), "The saved slices do not correspond to the loaded ones" 
@@ -47,6 +61,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--acdc_folder', default='raft', help="give the path of the folder where ACDC is stored.")
     parser.add_argument('--acdc_processed_folder', default='raft', help="give the path of the folder where to store processed dataset.")    
+    parser.add_argument('--pair_folder', default='raft', help="give the path of the folder where pairs ")
+    
     args = parser.parse_args()
     parse_patient_id_test_success()
     #get_ACDC_temporal_seq(args, "image_paths_training.txt", "training")

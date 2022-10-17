@@ -7,12 +7,11 @@
 #SBATCH --gres=gpu:1  # gpus if needed
 #SBATCH --output=/home/guests/manal_hamdi/manal/RAFT/output_files/output.out
 #SBATCH --error=/home/guests/manal_hamdi/manal/RAFT/output_files/error.err  
-#SBATCH --nodelist=c1-head
+##SBATCH --nodelist=c1-head
 
 # run your program here
 
 module load python/anaconda3
-conda activate raft
+conda activate generate
 
-/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u train.py --name try2 --stage acdc --validation acdc --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/" --num_steps 400 --gpus 0 --batch_size 1 --lr 0.0004 --wdecay 0.0001 --max_seq_len 4 --beta_photo 1 --beta_spatial 10.0 --beta_temporal 10.0 #--restore_ckpt "october_checkpoints/Avg_19_noNorm_full/Avg_19_noNorm_full_198.pth"  #--add_normalisation
- 
+/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u DataPreprocessing/ACDC_Preprocess_Script.py --acdc_folder "datasets/ACDC/" --pair_folder "datasets/ACDC_pairs/validation/"

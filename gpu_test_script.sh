@@ -14,4 +14,4 @@ conda deactivate
 conda activate raft
 echo "Activated raft"
 
-python3 evaluate.py --name Avg_Norm_full_298 --dataset acdc --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/" --gpus 0 --batch_size 1 --max_seq_len 8 --gamma 0.8 --restore_ckpt "october_checkpoints/Avg_Norm_full/Avg_Norm_full_298.pth" --output_file "debugging_exp_eval_results.txt"
+python3 evaluate.py --name 2_Avg_19_noNorm_full_198 --dataset acdc --dataset_folder "/home/guests/manal_hamdi/manal/RAFT/datasets/ACDC_processed/" --gpus 0 --batch_size 1 --max_seq_len 8 --gamma 0.8 --restore_ckpt "october_checkpoints/2_Avg_19_noNorm_full/2_Avg_19_noNorm_full_198.pth" --output_file "debugging_exp_eval_results.txt"

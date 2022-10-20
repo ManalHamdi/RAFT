@@ -5,13 +5,12 @@
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --gres=gpu:1  # gpus if needed
-#SBATCH --output=/home/guests/manal_hamdi/manal/RAFT/output_files/output.out
-#SBATCH --error=/home/guests/manal_hamdi/manal/RAFT/output_files/error.err  
-##SBATCH --nodelist=c1-head
+#SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/output.out
+#SBATCH --error=/home/guests/manal_hamdi/manal/TGRAFT/output_files/error.err  
 
 # run your program here
 
 module load python/anaconda3
-conda activate generate
+conda activate raft
 
-/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u DataPreprocessing/ACDC_Preprocess_Script.py --acdc_folder "datasets/ACDC/" --pair_folder "datasets/ACDC_pairs/validation/"
+/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u DataPreprocessing/ACDC_Preprocess_Script.py --acdc_folder "datasets/ACDC/testing/" --pair_folder "datasets/ACDC_pairs/"

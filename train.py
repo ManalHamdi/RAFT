@@ -102,44 +102,46 @@ def save_model(epoch, model, optimizer, scheduler, val_loss_dict, loss_epoch,
     
 def train(args):
     wandb.init(project="test-project", entity="manalteam")
-    model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
+    
+    config = wandb.config
+    model = nn.DataParallel(RAFT(config), device_ids=config.gpus)
     print("Parameter Count: %d" % count_parameters(model))
     
     epoch = 0
-    last_epoch = args.num_steps - 1
+    last_epoch = config.num_steps - 1
     
-    cuda_to_use = "cuda:" + str(args.gpus[0])
+    cuda_to_use = "cuda:" + str(config.gpus[0])
     model.to(cuda_to_use)
 
-    if args.stage != 'chairs':
+    if config.stage != 'chairs':
         model.module.freeze_bn()
 
-    train_loader = datasets.fetch_dataloader(args)
-    optimizer, scheduler = fetch_optimizer(args, model)
+    train_loader = datasets.fetch_dataloader(config)
+    optimizer, scheduler = fetch_optimizer(config, model)
 
-    scaler = GradScaler(enabled=args.mixed_precision)
+    scaler = GradScaler(enabled=config.mixed_precision)
 
     VAL_FREQ = 10
     add_noise = False
     
-    if args.restore_ckpt is not None:
-        print("Found Checkpoint: ", args.restore_ckpt)
-        ckpt = torch.load(args.restore_ckpt)
+    if config.restore_ckpt is not None:
+        print("Found Checkpoint: ", config.restore_ckpt)
+        ckpt = torch.load(config.restore_ckpt)
         epoch = ckpt['epoch'] + 1
         model.module.load_state_dict(ckpt['model'], strict=True)
         last_step_sched = 943 * epoch
-        optimizer, scheduler = fetch_optimizer(args, model, epochs_sofar=epoch, last_step=last_step_sched)
+        optimizer, scheduler = fetch_optimizer(config, model, epochs_sofar=epoch, last_step=last_step_sched)
         scheduler.last_epoch = last_step_sched
         optimizer.load_state_dict(ckpt['optimizer'])
         scheduler.load_state_dict(ckpt['scheduler'])
-        last_epoch = epoch + args.num_steps - 1
-        print("I am loading an existing model from", args.restore_ckpt, 
+        last_epoch = epoch + config.num_steps - 1
+        print("I am loading an existing model from", config.restore_ckpt, 
               "at epoch", ckpt['epoch'], "so we are starting at epoch", epoch, 
               "with a training loss", ckpt['train_loss'], "and validation loss", ckpt['validation_loss'])
         
     model.train()
     
-    experiment_dir = 'october_checkpoints/%s'% (args.name)
+    experiment_dir = 'october_checkpoints/%s'% (config.name)
     os.mkdir(experiment_dir)
     print("I created the exp dir", experiment_dir)
     
@@ -150,22 +152,22 @@ def train(args):
             optimizer.zero_grad()
             image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
             image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
-            if args.add_noise:
+            if config.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
                 template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
 
-            flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=args.iters)
+            flow_predictions1, flow_predictions2 = model(image_batch, template_batch, iters=config.iters)
 
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  
             batch_loss_dict = Losses.disimilarity_loss(image_batch, template_batch, patient_slice_id_batch,
                                                               flow_predictions1, flow_predictions2, 
                                                               epoch=epoch, mode="training", 
-                                                              i_batch=i_batch, args=args) 
+                                                              i_batch=i_batch, args=config) 
             scaler.scale(batch_loss_dict["Total"]).backward()
            
             scaler.unscale_(optimizer)                
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config.clip)
             
             scaler.step(optimizer)
             scheduler.step()
@@ -189,7 +191,7 @@ def train(args):
         # VALIDATION
         results = {}
         val_loss_dict = {}
-        for val_dataset in args.validation:
+        for val_dataset in config.validation:
             if val_dataset == 'chairs':
                 results.update(evaluate.validate_chairs(model.module))
             elif val_dataset == 'sintel':
@@ -197,7 +199,7 @@ def train(args):
             elif val_dataset == 'kitti':
                 results.update(evaluate.validate_kitti(model.module))
             elif val_dataset == 'acdc':
-                val_loss_dict = evaluate.validate_acdc(model.module, args, epoch=epoch, mode='validation')
+                val_loss_dict = evaluate.validate_acdc(model.module, config, epoch=epoch, mode='validation')
 
             wandb.log({"Validation Total Loss": val_loss_dict["Total"]})
             wandb.log({"Img Validation Error": val_loss_dict["Img Error"]})
@@ -205,13 +207,13 @@ def train(args):
 
         # Log every epoch
         if (epoch % 2 == 0):
-            PATH = '%s_%d.pth' % (args.name, epoch)
+            PATH = '%s_%d.pth' % (config.name, epoch)
             print("Should save", PATH)
             save_model(epoch, model, optimizer, scheduler, val_loss_dict, loss_epoch, 
                        img_error_epoch, tmp_error_epoch, experiment_dir, PATH)
 
         model.train()
-        if args.stage != 'chairs':
+        if config.stage != 'chairs':
             model.module.freeze_bn()
     
         epoch += 1 # Num of epochs
@@ -221,10 +223,10 @@ def train(args):
             break
 
     
-    model_dir = 'mymodels/%s'% (args.name)
+    model_dir = 'mymodels/%s'% (config.name)
     os.mkdir(model_dir)
     print("I created model dir", model_dir)
-    PATH =  '%s_%d.pth' % (args.name, epoch-1)
+    PATH =  '%s_%d.pth' % (config.name, epoch-1)
     save_model(epoch-1, model, optimizer, scheduler, val_loss_dict, loss_epoch, 
                img_error_epoch, tmp_error_epoch, model_dir, PATH)
 
@@ -232,6 +234,10 @@ def train(args):
 
 
 if __name__ == '__main__':
+    args = merlinpy.Experiment()
+    args.parse()
+    config = args.config
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default='raft', help="name your experiment")
     parser.add_argument('--stage', help="determines which dataset to use for training") 
@@ -262,11 +268,11 @@ if __name__ == '__main__':
     
     
     args = parser.parse_args()
-
+    '''
     torch.manual_seed(1234)
     np.random.seed(1234)
 
     if not os.path.isdir('checkpoints'):
         os.mkdir('checkpoints')
 
-    train(args)
+    train(config)

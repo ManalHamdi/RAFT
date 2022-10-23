@@ -78,7 +78,7 @@ class ACDCDataset(data.Dataset):
         if (seq_tensor.shape[0] > self.max_seq_len):
             seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
 
-        template = seq_utils.generate_template(seq_tensor, "pca") # tensor [H, W]
+        template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
         seq_length = seq_tensor.shape[0]
         h = seq_tensor.shape[1]
         w = seq_tensor.shape[2]

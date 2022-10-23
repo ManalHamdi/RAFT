@@ -13,4 +13,4 @@
 module load python/anaconda3
 conda activate raft
 
-/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u DataPreprocessing/ACDC_Preprocess_Script.py --acdc_folder "datasets/ACDC/testing/" --pair_folder "datasets/ACDC_pairs/"
+/home/guests/manal_hamdi/.conda/envs/raft/bin/python -u DataPreprocessing/ACDC_Preprocess_Script.py --acdc_folder "datasets/ACDC/testing/" --acdc_processed_folder "datasets/ACDC_processed/testing/"

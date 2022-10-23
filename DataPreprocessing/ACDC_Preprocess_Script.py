@@ -40,7 +40,7 @@ def get_ACDC_temporal_seq(args, path_file, mode):
                 for t in range(0, T):
                     slice_ = volume[:, :, z, t].copy()
                     seq[:,:,t] = slice_
-                
+                '''
                 idx_rnd = torch.randperm(T)
                 seq2 = torch.zeros_like(torch.from_numpy(seq)).numpy()
                 for i in range(0, T):
@@ -55,22 +55,25 @@ def get_ACDC_temporal_seq(args, path_file, mode):
                     nib.save(nib_pair, pair_filename)
                 '''    
                 nib_seq = nib.Nifti1Image(seq, np.eye(4))
-                seq_filename = args.acdc_processed_folder + mode+'/patient'+patient_id+'_z_'+str(z)+'.nii.gz'
+                seq_filename = args.acdc_processed_folder +'/patient'+patient_id+'_z_'+str(z)+'.nii.gz'
                 nib.save(nib_seq, seq_filename)
                 
                 if (line == 0 and z == 0): # for testing
                     volume_nib = nib.load(seq_filename).get_fdata() # Loads np array [H, W, Z, T]
                     assert volume_nib.all() == seq.all(), "The saved slices do not correspond to the loaded ones" 
-                '''
+                
             
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--acdc_folder', default='raft', help="give the path of the folder where ACDC is stored.")
-    parser.add_argument('--acdc_processed_folder', default='raft', help="give the path of the folder where to store processed dataset.")    
-    parser.add_argument('--pair_folder', default='raft', help="give the path of the folder where pairs ")
+    parser.add_argument('--acdc_folder', default='ACDC/testing', help="give the path of the folder where ACDC is stored.")
+    parser.add_argument('--mode', default='testing', help="choose between testing, training and validation.")
+    parser.add_argument('--acdc_processed_folder', default='ACDC_processed/testing', help="give the path of the folder where to store processed dataset.")    
     
     args = parser.parse_args()
     parse_patient_id_test_success()
-    #get_ACDC_temporal_seq(args, "DataPreprocessing/image_paths_training.txt", "training")
-    #get_ACDC_temporal_seq(args, "DataPreprocessing/image_paths_validation.txt", "validation")
-    get_ACDC_temporal_seq(args, "DataPreprocessing/image_paths_testing.txt", "testing")
+    if (mode == 'training'):
+        get_ACDC_temporal_seq(args, "DataPreprocessing/image_paths_training.txt", "training")
+    elif (mode == 'validation'):
+        get_ACDC_temporal_seq(args, "DataPreprocessing/image_paths_validation.txt", "validation")
+    elif (mode == 'testing'):
+        get_ACDC_temporal_seq(args, "DataPreprocessing/image_paths_testing.txt", "testing")

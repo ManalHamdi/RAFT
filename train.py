@@ -10,9 +10,10 @@ import os
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-
+import experiment
 import torch
 import torch.nn as nn
+import yaml
 import torch.optim as optim
 import torch.nn.functional as F
 
@@ -102,8 +103,7 @@ def save_model(epoch, model, optimizer, scheduler, val_loss_dict, loss_epoch,
 def train(args):
     wandb.init(project="test-project", entity="manalteam")
     
-    config = wandb.config
-    model = nn.DataParallel(RAFT(config), device_ids=config.gpus)
+    model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
     
     epoch = 0
@@ -191,6 +191,7 @@ def train(args):
         results = {}
         val_loss_dict = {}
         for val_dataset in config.validation:
+            print("Im in validation", val_dataset)
             if val_dataset == 'chairs':
                 results.update(evaluate.validate_chairs(model.module))
             elif val_dataset == 'sintel':
@@ -198,6 +199,7 @@ def train(args):
             elif val_dataset == 'kitti':
                 results.update(evaluate.validate_kitti(model.module))
             elif val_dataset == 'acdc':
+                
                 val_loss_dict = evaluate.validate_acdc(model.module, config, epoch=epoch, mode='validation')
 
             wandb.log({"Validation Total Loss": val_loss_dict["Total"]})
@@ -233,9 +235,17 @@ def train(args):
 
 
 if __name__ == '__main__':
-    args = merlinpy.Experiment()
-    args.parse()
-    config = args.config
+    with open("config.yml", "r") as stream:
+        try:
+            d = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+        
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment', default='GroupwiseFull', help="name of experiment from config.yml")
+    args = parser.parse_args()
+    config = experiment.Experiment(d[args.experiment])    
+
     '''
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', default='raft', help="name your experiment")

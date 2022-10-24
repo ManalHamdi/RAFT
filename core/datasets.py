@@ -303,7 +303,6 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
         train_dataset = KITTI(aug_params, split='training')
     elif args.stage == 'acdc':
-        aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
         train_dataset = ACDCDataset(args.dataset_folder, "training", args.max_seq_len, args.add_normalisation)
         print("Length of dataset is", len(train_dataset))
         

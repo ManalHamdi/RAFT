@@ -135,7 +135,7 @@ def validate_acdc(model, args, mode, epoch, iters=2):
     ''' Perform validation using ACDC processed dataset '''
     cuda_to_use = "cuda:" + str(args.gpus[0])
     model.eval()
-    val_dataset = datasets.ACDCDataset(args.dataset_folder, mode, args.max_seq_len, args.add_normalisation)
+    val_dataset = datasets.ACDCDataset(args.dataset_folder, mode, args.max_seq_len, args.model, args.add_normalisation)
 
     out_list = []
     total_loss, img_total_error, tmp_total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0, 0
@@ -215,7 +215,7 @@ def test_acdc(args):
     cuda_to_use = "cuda:" + str(args.gpus[0])
     iters = 2
 
-    test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.add_normalisation)
+    test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.model, args.add_normalisation)
     
     all_seq_error = 0
     all_pair_error = 0
@@ -343,6 +343,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--add_normalisation', action='store_true')
     parser.add_argument('--output_file', type=str)
+    parser.add_argument('--model', type=str, default='group')
 
     args = parser.parse_args()
     '''

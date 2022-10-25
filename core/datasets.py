@@ -23,12 +23,13 @@ class ACDCDataset(data.Dataset):
     Each line represents a patient
     img_path tx ty theta s
     '''
-    def __init__(self, folder_path, mode, max_seq_len, add_normalisation):
+    def __init__(self, folder_path, mode, max_seq_len, model, add_normalisation):
         self.folder_path = folder_path
         self.seq_f_list = [f for f in os.listdir(self.folder_path+mode+"/") if osp.isfile(osp.join(self.folder_path+mode+"/", f))] # List of filenames of seqs
         self.mode = mode
         self.max_seq_len = max_seq_len
         self.add_normalisation = add_normalisation
+        self.model = model
 
     def __getitem__(self, key):
         if isinstance(key, slice):
@@ -70,27 +71,40 @@ class ACDCDataset(data.Dataset):
         seq_path = self.seq_f_list[index]
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
         
+        patient_slice_id = seq_path.split(".")[0] # remove .nii.gz
+        
         #seq = self.image_normalization(seq)
         
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
         
-        if (seq_tensor.shape[0] > self.max_seq_len):
-            seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
-
-        template = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
-        seq_length = seq_tensor.shape[0]
         h = seq_tensor.shape[1]
         w = seq_tensor.shape[2]
-        if (h == 424 or w == 512):
-            print(self.folder_path+self.mode+"/"+seq_path)
-        template_seq = template.repeat(seq_length, 1, 1)
         
+        
+        if (seq_tensor.shape[0] > self.max_seq_len):
+            seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
+        seq_length = seq_tensor.shape[0]
+        if (h == 424 or w == 512):
+                print(self.folder_path+self.mode+"/"+seq_path)
+        
+        seq2 = torch.zeros_like(seq_tensor)
+        
+        assert self.model == 'group' or self.model == 'pair'
+        if (self.model == 'group'):
+            seq2 = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
+            seq2 = seq2.repeat(seq_length, 1, 1)
+        elif (self.model == 'pair'):
+            idx_rnd = torch.randperm(seq_length)
+            seq2 = torch.zeros_like(seq_tensor)
+            for i in range(0, seq_length):
+                seq2[i,:,:] = seq_tensor[idx_rnd[i],:,:]
+
         if (self.add_normalisation):
             seq_tensor = self.tensor_normalization(seq_tensor, self.mode)
-            template_seq = self.tensor_normalization(template_seq, self.mode)
-        patient_slice_id = seq_path.split(".")[0] # remove .nii.gz
-        return seq_tensor[:, 0:h-h%8, 0:w-w%8], template_seq[:, 0:h-h%8, 0:w-w%8], patient_slice_id
+            seq2 = self.tensor_normalization(seq2, self.mode)
+                
+        return seq_tensor[:, 0:h-h%8, 0:w-w%8], seq2[:, 0:h-h%8, 0:w-w%8], patient_slice_id
 
 class FlowDataset(data.Dataset):
     def __init__(self, aug_params=None, sparse=False):
@@ -303,7 +317,7 @@ def fetch_dataloader(args, TRAIN_DS='C+T+K+S+H'):
         aug_params = {'crop_size': args.image_size, 'min_scale': -0.2, 'max_scale': 0.4, 'do_flip': False}
         train_dataset = KITTI(aug_params, split='training')
     elif args.stage == 'acdc':
-        train_dataset = ACDCDataset(args.dataset_folder, "training", args.max_seq_len, args.add_normalisation)
+        train_dataset = ACDCDataset(args.dataset_folder, "training", args.max_seq_len, args.model, args.add_normalisation)
         print("Length of dataset is", len(train_dataset))
         
     train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, 

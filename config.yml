@@ -27,6 +27,8 @@ GroupwiseFull:
     beta_temporal: 10.0
     num_steps: 400
     add_normalisation: False
+    model: 'group'
+    
 PairwiseFull:
     <<: *defaults
     name: 'PairwiseFull'
@@ -35,3 +37,4 @@ PairwiseFull:
     beta_temporal: 0.0
     num_steps: 2
     add_normalisation: False
+    model: 'pair'

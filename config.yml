@@ -1,8 +1,9 @@
 DefaultExperiment: &defaults
-    dataset_folder: '/home/peter_studt/Manal/TGRAFT/datasets/ACDC_processed/'
+    dataset_folder: 'datasets/ACDC_processed/'
     gpus: [0]
     num_workers: 4
     small: False
+    dataset: acdc
     stage: 'acdc'
     validation: ['acdc']
     batch_size: 1
@@ -28,6 +29,7 @@ GroupwiseFull:
     num_steps: 400
     add_normalisation: False
     model: 'group'
+    train_or_test: 'train'
     
 PairwiseFull:
     <<: *defaults
@@ -35,6 +37,69 @@ PairwiseFull:
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 0.0
-    num_steps: 2
+    num_steps: 400
     add_normalisation: False
     model: 'pair'
+    train_or_test: 'train'
+
+Eval: &eval_defaults
+    dataset: acdc
+    dataset_folder: "/home/guests/manal_hamdi/manal/TGRAFT/datasets/ACDC_processed/"
+    small: False
+    mixed_precision: False
+    alternate_corr: False
+    gpus: [0]
+    gamma: 0.8
+    batch_size: 1
+    output_file: "debugging_exp_eval_results.txt"
+    train_or_test: 'test'
+    dropout: 0.0
+    
+Eval_8_PairwiseFull:
+    <<: *eval_defaults
+    name: "Pair_Avg_19_noNorm_full_398"
+    restore_ckpt: "october_checkpoints/raft_pairwise/raft_pairwise_398.pth"
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 8
+
+Eval_8_GroupwiseFull:
+    <<: *eval_defaults
+    name: "2_Avg_19_noNorm_full_398"
+    restore_ckpt: "october_checkpoints/2_Avg_19_noNorm_full/2_Avg_19_noNorm_full_398.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+    
+    
+Eval_8_GroupwiseNorm198:
+    <<: *eval_defaults
+    name: "Avg_Norm_full"
+    restore_ckpt: "october_checkpoints/Avg_Norm_full/Avg_Norm_full_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+
+Eval_8_GroupwiseNorm298:
+    <<: *eval_defaults
+    name: "Avg_Norm_full"
+    restore_ckpt: "october_checkpoints/Avg_Norm_full/Avg_Norm_full_298.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+
+Eval_19_PairwiseFull:
+    <<: *eval_defaults
+    name: "2_Avg_19_noNorm_full_398"
+    restore_ckpt: "october_checkpoints/2_Avg_19_noNorm_full/2_Avg_19_noNorm_full_398.pth"
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 19
+
+Eval_19_GroupwiseFull:
+    <<: *eval_defaults
+    name: "2_Avg_19_noNorm_full_398"
+    restore_ckpt: "october_checkpoints/2_Avg_19_noNorm_full/2_Avg_19_noNorm_full_398.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19

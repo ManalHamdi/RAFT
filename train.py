@@ -79,10 +79,9 @@ def count_parameters(model):
 def fetch_optimizer(args, model, epochs_sofar=0, last_step=-1):
     """ Create the optimizer and learning rate scheduler """
     optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wdecay, eps=args.epsilon)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [100, 200], gamma=0.1, last_epoch=-1, verbose=False)
-    
-    #scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=epochs_sofar+args.num_steps, steps_per_epoch=943,
-    #   pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
+    #scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [100, 200], gamma=0.1, last_epoch=-1, verbose=False)
+    scheduler = optim.lr_scheduler.OneCycleLR(optimizer, args.lr, epochs=args.num_steps, steps_per_epoch=943,
+        pct_start=0.05, cycle_momentum=False, anneal_strategy='linear')
 
     return optimizer, scheduler
 

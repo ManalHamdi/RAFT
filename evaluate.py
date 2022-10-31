@@ -17,6 +17,8 @@ import flow_vis
 from utils import flow_viz
 from utils import frame_utils
 import core.sequence_handling_utils as seq_utils
+import yaml
+import experiment
 
 from raft import RAFT
 from utils.utils import InputPadder, forward_interpolate
@@ -161,7 +163,7 @@ def validate_acdc(model, args, mode, epoch, iters=2):
     return val_dict
 
 @torch.no_grad()
-def log_gifs_test(image_batch, template_batch, temp_pred, flow_pred_fwd, flow_pred_bwd, patient_name, add_normalisation):
+def log_gifs_test(image_batch, template_batch, temp_pred, flow_pred_fwd, flow_pred_bwd, patient_name, args):
     total_iter = len(flow_pred_fwd)
     b, s, _, h, w = flow_pred_fwd[0].shape
     iters = 2
@@ -172,7 +174,7 @@ def log_gifs_test(image_batch, template_batch, temp_pred, flow_pred_fwd, flow_pr
     # error consec
     error = torch.abs(img_consec - image_batch[:,1:s,:,:])
     i2 = error.permute(1, 0, 2, 3).cpu().detach().numpy()[::2,:,:,:]
-    if (add_normalisation):
+    if (args.add_normalisation):
         scale = 255
     else:
         scale = 1
@@ -252,7 +254,7 @@ def test_acdc(args):
                        [wandb.Video(i2, fps=2, caption="Image Prime" , format="gif")]})
 
             log_gifs_test(image_batch, template_batch, template_prime, 
-                              flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch, args.add_normalisation)
+                              flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch, args)
             #log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_slice_id_batch)
 
         this_seq_pair_err = 0
@@ -328,9 +330,20 @@ def validate_kitti(model, iters=24):
     return {'kitti-epe': epe, 'kitti-f1': f1}
 
 if __name__ == '__main__':
+    with open("config.yml", "r") as stream:
+        try:
+            d = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+        
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment', default='EvalGroupwiseFull', help="name of experiment from config.yml")
+    args = parser.parse_args()
+    config = experiment.Experiment(d[args.experiment]) 
+    
+    '''
     parser = argparse.ArgumentParser()
     parser.add_argument('--name', help="name of experiment being evaluated")
-    parser.add_argument('--model', help="restore checkpoint")
     parser.add_argument('--dataset', help="dataset for evaluation")
     parser.add_argument('--small', action='store_true', help='use small model')
     parser.add_argument('--mixed_precision', action='store_true', help='use mixed precision')
@@ -345,26 +358,22 @@ if __name__ == '__main__':
     parser.add_argument('--output_file', type=str)
     parser.add_argument('--model', type=str, default='group')
 
-    args = parser.parse_args()
-    '''
     model = torch.nn.DataParallel(RAFT(args))
     model.load_state_dict(torch.load(args.model))
 
     model.cuda()
     model.eval()
     '''
-    # create_sintel_submission(model.module, warm_start=True)
-    # create_kitti_submission(model.module)
 
     with torch.no_grad():
-        if args.dataset == 'chairs':
+        if config.dataset == 'chairs':
             validate_chairs(model.module)
 
-        elif args.dataset == 'sintel':
+        elif config.dataset == 'sintel':
             validate_sintel(model.module)
 
-        elif args.dataset == 'kitti':
+        elif config.dataset == 'kitti':
             validate_kitti(model.module)
-        elif args.dataset == 'acdc':
-            test_acdc(args)
+        elif config.dataset == 'acdc':
+            test_acdc(config)
 

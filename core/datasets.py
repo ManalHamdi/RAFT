@@ -80,8 +80,7 @@ class ACDCDataset(data.Dataset):
         
         h = seq_tensor.shape[1]
         w = seq_tensor.shape[2]
-        
-        
+         
         if (seq_tensor.shape[0] > self.max_seq_len):
             seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
         seq_length = seq_tensor.shape[0]

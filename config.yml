@@ -30,6 +30,50 @@ GroupwiseFull:
     add_normalisation: False
     model: 'group'
     train_or_test: 'train'
+
+GroupwiseFull200:
+    <<: *defaults
+    name: 'GroupwiseFull200'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+
+GroupwisePhoto:
+    <<: *defaults
+    name: 'GroupwisePhoto'
+    beta_photo: 1
+    beta_spatial: 0.0
+    beta_temporal: 0.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    
+GroupwisePhotoSpa:
+    <<: *defaults
+    name: 'GroupwisePhotoSpa'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 0.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    
+GroupwisePhotoTemp:
+    <<: *defaults
+    name: 'GroupwisePhotoTemp'
+    beta_photo: 1
+    beta_spatial: 0.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
     
 PairwiseFull:
     <<: *defaults
@@ -70,15 +114,6 @@ Eval_8_GroupwiseFull:
     add_normalisation: False
     model: 'group'
     max_seq_len: 8
-    
-    
-Eval_8_GroupwiseNorm198:
-    <<: *eval_defaults
-    name: "Avg_Norm_full"
-    restore_ckpt: "october_checkpoints/Avg_Norm_full/Avg_Norm_full_198.pth"
-    add_normalisation: False
-    model: 'group'
-    max_seq_len: 8
 
 Eval_8_GroupwiseNorm298:
     <<: *eval_defaults
@@ -96,10 +131,184 @@ Eval_19_PairwiseFull:
     model: 'pair'
     max_seq_len: 19
 
-Eval_19_GroupwiseFull:
+Eval_19_GroupwiseFull_398:
     <<: *eval_defaults
     name: "2_Avg_19_noNorm_full_398"
     restore_ckpt: "october_checkpoints/2_Avg_19_noNorm_full/2_Avg_19_noNorm_full_398.pth"
     add_normalisation: False
     model: 'group'
     max_seq_len: 19
+
+Eval_19_Groupwise_photo:
+    <<: *eval_defaults
+    name: "Avg_19_noNorm_photo"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_photo/Avg_19_noNorm_photo_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+Eval_19_Groupwise_photo_spa:
+    <<: *eval_defaults
+    name: "Avg_19_noNorm_photo_10spa"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_photo_10spa/Avg_19_noNorm_photo_10spa_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+Eval_19_Groupwise_photo_temp:
+    <<: *eval_defaults
+    name: "Avg_19_noNorm_photo_10temp"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_photo_10temp/Avg_19_noNorm_photo_10temp_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+    
+Eval_19_GroupwiseFull_198:
+    <<: *eval_defaults
+    name: "Avg_19_noNorm_full"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_full/Avg_19_noNorm_full_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+
+#*******************************
+
+Eval_12_GroupwiseFull_398:
+    <<: *eval_defaults
+    name: "2_Avg_12_noNorm_full_398"
+    restore_ckpt: "october_checkpoints/2_Avg_19_noNorm_full/2_Avg_19_noNorm_full_398.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 12
+
+Eval_12_Groupwise_photo:
+    <<: *eval_defaults
+    name: "Avg_12_noNorm_photo"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_photo/Avg_19_noNorm_photo_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 12
+
+Eval_12_Groupwise_photo_spa:
+    <<: *eval_defaults
+    name: "Avg_12_noNorm_photo_10spa"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_photo_10spa/Avg_19_noNorm_photo_10spa_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 12
+
+Eval_12_Groupwise_photo_temp:
+    <<: *eval_defaults
+    name: "Avg_12_noNorm_photo_10temp"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_photo_10temp/Avg_19_noNorm_photo_10temp_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 12
+    
+Eval_12_GroupwiseFull_198:
+    <<: *eval_defaults
+    name: "Avg_12_noNorm_full"
+    restore_ckpt: "october_checkpoints/Avg_19_noNorm_full/Avg_19_noNorm_full_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 12
+    
+    
+#******************************* EVALUATING NEW IMPLEMENTATION ****************************
+#******** 19 ****************************
+Eval_config_19_GroupwiseFull_398:
+    <<: *eval_defaults
+    name: "GroupwiseFull"
+    restore_ckpt: "october_checkpoints/GroupwiseFull/GroupwiseFull_398.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+Eval_config_19_GroupwisePhoto:
+    <<: *eval_defaults
+    name: "GroupwisePhoto"
+    restore_ckpt: "october_checkpoints/GroupwisePhoto/GroupwisePhoto_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+Eval_config_19_GroupwisePhotoSpa:
+    <<: *eval_defaults
+    name: "GroupwisePhotoSpa"
+    restore_ckpt: "october_checkpoints/GroupwisePhotoSpa/GroupwisePhotoSpa_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+Eval_config_19_GroupwisePhotoTemp:
+    <<: *eval_defaults
+    name: "GroupwisePhotoTemp"
+    restore_ckpt: "october_checkpoints/GroupwisePhotoTemp/GroupwisePhotoTemp_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+    
+Eval_config_19_GroupwiseFull_198:
+    <<: *eval_defaults
+    name: "GroupwiseFull200"
+    restore_ckpt: "october_checkpoints/GroupwiseFull200/GroupwiseFull200_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 19
+
+Eval_config_19_PairwiseFull:
+    <<: *eval_defaults
+    name: "PairwiseFull"
+    restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_398.pth"
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 19
+#******** 8 ****************************
+Eval_config_8_GroupwiseFull_398:
+    <<: *eval_defaults
+    name: "GroupwiseFull"
+    restore_ckpt: "october_checkpoints/GroupwiseFull/GroupwiseFull_398.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+
+Eval_config_8_GroupwisePhoto:
+    <<: *eval_defaults
+    name: "GroupwisePhoto"
+    restore_ckpt: "october_checkpoints/GroupwisePhoto/GroupwisePhoto_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+
+Eval_config_8_GroupwisePhotoSpa:
+    <<: *eval_defaults
+    name: "GroupwisePhotoSpa"
+    restore_ckpt: "october_checkpoints/GroupwisePhotoSpa/GroupwisePhotoSpa_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+
+Eval_config_8_GroupwisePhotoTemp:
+    <<: *eval_defaults
+    name: "GroupwisePhotoTemp"
+    restore_ckpt: "october_checkpoints/GroupwisePhotoTemp/GroupwisePhotoTemp_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+    
+Eval_config_8_GroupwiseFull_198:
+    <<: *eval_defaults
+    name: "GroupwiseFull200"
+    restore_ckpt: "october_checkpoints/GroupwiseFull200/GroupwiseFull200_198.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 8
+    
+Eval_config_8_PairwiseFull:
+    <<: *eval_defaults
+    name: "PairwiseFull"
+    restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_398.pth"
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 8

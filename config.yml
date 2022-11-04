@@ -9,7 +9,7 @@ DefaultExperiment: &defaults
     batch_size: 1
     lr: 0.0004 
     wdecay: 0.0001 
-    max_seq_len: 4
+    max_seq_len: 19
     iters: 12
     epsilon: 0.00000001
     clip: 1.0

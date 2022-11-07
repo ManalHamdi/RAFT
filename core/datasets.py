@@ -84,9 +84,10 @@ class ACDCDataset(data.Dataset):
         if (seq_tensor.shape[0] > self.max_seq_len):
             seq_tensor = seq_tensor[0:self.max_seq_len, :, :]
         seq_length = seq_tensor.shape[0]
+
         if (h == 424 or w == 512):
                 print(self.folder_path+self.mode+"/"+seq_path)
-        
+                
         seq2 = torch.zeros_like(seq_tensor)
         
         assert self.model == 'group' or self.model == 'pair'

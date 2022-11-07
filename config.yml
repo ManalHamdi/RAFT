@@ -98,6 +98,7 @@ Eval: &eval_defaults
     output_file: "debugging_exp_eval_results.txt"
     train_or_test: 'test'
     dropout: 0.0
+    iters: 2
     
 Eval_8_PairwiseFull:
     <<: *eval_defaults

@@ -152,7 +152,7 @@ def validate_acdc(model, args, mode, epoch, iters=2):
                                            i_batch=2, args=args) # -- loss in batch
 
         total_loss += batch_loss_dict["Total"].item() / len(val_dataset)
-        img_total_error += batch_loss_dict["Img Error"].item() / len(val_dataset)
+        img_total_error += batch_loss_dict["Img Error"] / len(val_dataset)
         tmp_total_error += batch_loss_dict["Temp Error"].item() / len(val_dataset)
     val_dict = {"Total": total_loss,
                 "Img Error": img_total_error,
@@ -199,6 +199,96 @@ def log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_name):
     wandb.log({patient_name + " "+ mode + " Images ": [wandb.Image(flow_1_2, caption=patient_name + " Flow 1->2"),
                                                       wandb.Image(flow_1_6, caption=patient_name + " Flow 1->6")]})
 
+@torch.no_grad()
+def log_test(im1, im2, err, flow, patient_name, img1_idx, img2_idx):
+    ''' Logging images, not GIF 
+    '''
+    flow = flow_vis.flow_to_color(flow.permute(1,2,0).cpu().detach().numpy())
+    
+    log_name = patient_name + " Flow from "+ img1_idx + " to " + img2_idx + " " + mode + " Images "
+    
+    wandb.log({log_name: [wandb.Image(img1, caption=patient_name + " Image"+img1_idx), 
+                         wandb.Image(im2, caption=patient_name + " Image"+img2_idx),
+                         wandb.Image(error, caption=patient_name + " Error 2 and 2'"),
+                         wandb.Image(flow, caption=patient_name + " Flow"+img1_idx+"->"+img2_idx)]})
+    
+@torch.no_grad()
+def compute_avg_pair_error_pair(test_dataset, args):
+    avg_pair_err, pair_count = 0, 0
+    to_log = True 
+    l1_loss = torch.nn.L1Loss()
+    for seq_id in range(0, len(test_dataset)):
+        seq_original, _, patient_name = test_dataset[seq_id]
+        seq_len, h, w = seq_original.shape
+        for frame_id in range(0, seq_len):
+            seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
+            flow_pred_fwd, _ = model(seq1, seq_original, iters=args.iters, test_mode=True)
+            seq_pred = seq_utils.warp_batch(seq1, flow_pred_fwd[iters-1], gpu=args.gpus[0])
+            for i in range(0, seq_len):
+                err = l1_loss(seq_original[0,i,:,:], seq_pred[i,:,:])
+                avg_pair_err += err
+                pair_count += 1
+                if (i == frame_id+1 and to_log):
+                    log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[i,:,:], 
+                             err, flow_pred_fwd[args.iters-1][0,i,:,:,:], frame_id, i) # Flow frame_id -> i
+                    to_log = False
+            
+    avg_pair_err /= pair_count
+    return avg_pair_err
+
+@torch.no_grad()
+def compute_avg_pair_error_group(test_dataset, args):
+    avg_pair_err, pair_count = 0, 0
+    l1_loss = torch.nn.L1Loss()
+    to_log = True
+    for seq_id in range(0, len(test_dataset)):
+        seq, tmp_seq, patient_name = test_dataset[seq_id]
+        seq_len, h, w = seq.shape
+        flow_pred_fwd, flow_pred_bwd = model(seq, tmp_seq, iters=args.iters, test_mode=True)
+        for im1_id in range(0, seq_len):
+            # Construct a seq with frame im1_id repeated
+            im1 = seq[im1_id,:,:].repeat(1, 1, 1)
+            for im2_id in range(0, seq_len): # Flow im1_id -> im2_id
+                im2 = seq[im2_id,:,:].repeat(1, 1, 1)
+                flow1_tmp = flow_pred_fwd[iters-1][im1_id,:,:,:].repeat(1, 1, 1, 1)
+                temp_p = seq_utils.warp_batch(im1, flow1_tmp, gpu=args.gpus[0])
+                flow2 = flow_pred_bwd[iters-1][im2_id,:,:,:].repeat(1, 1, 1, 1)
+                im2_p = seq_utils.warp_batch(temp_p, flow2, gpu=args.gpus[0])
+                err = l1_loss(im2, im2_p)
+                avg_pair_err += err
+                pair_count += 1
+                if (im2_id == im1_id+1 and to_log):
+                    log_test(im1, im2, im2_p, flow1_tmp+flow2, im1_id, im2_id)
+                    to_log = False
+    avg_pair_err /= pair_count
+    return avg_pair_err
+        
+@torch.no_grad()
+def evaluate_acdc_test(args):
+    f = open(args.output_file, "a")
+    f.write(args.name + "\n")
+
+    wandb.init(project="test-project", entity="manalteam")
+    model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
+    
+    if args.restore_ckpt is not None:
+        f.write("Loading Checkpoint: " + str(args.restore_ckpt) + "\n")
+        ckpt = torch.load(args.restore_ckpt)
+        model.module.load_state_dict(ckpt['model'], strict=True)
+    
+    model.eval()
+    mode = 'testing'
+    cuda_to_use = "cuda:" + str(args.gpus[0])
+    
+    test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.model, args.add_normalisation)
+    assert arg.model == 'group' or arg.model == 'pair'
+    if (arg.model == 'pair'):
+        avg_pair_err = compute_avg_pair_error_pair(test_dataset, args)
+    elif(arg.model == 'group'):
+        avg_pair_err = compute_avg_pair_error_group(test_dataset, args)
+
+    wandb.log({"Average pair error": all_pair_error})
+            
 @torch.no_grad()
 def test_acdc(args):
     f = open(args.output_file, "a")
@@ -375,5 +465,6 @@ if __name__ == '__main__':
         elif config.dataset == 'kitti':
             validate_kitti(model.module)
         elif config.dataset == 'acdc':
-            test_acdc(config)
+            #test_acdc(config)
+            evaluate_acdc_test(config)
 

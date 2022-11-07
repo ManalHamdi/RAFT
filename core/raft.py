@@ -149,7 +149,12 @@ class RAFT(nn.Module):
             image and template batch are tensors [B, N, H, W] // instead of [B, C, H, W]
             Returns list of flow estimations with length iters, and each item of the list is [B, N, 2, H, W]// [B, 2, H, W]
         """
-        flow_pred1 = self.predict_flow(image_batch, template_batch, iters=12, flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
-        flow_pred2 = self.predict_flow(template_batch, image_batch, iters=12, flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
+        
+        flow_pred1 = self.predict_flow(image_batch, template_batch, iters=12, 
+                                       flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
+        flow_pred2 = None
+        if (self.args.model == 'group'):
+            flow_pred2 = self.predict_flow(template_batch, image_batch, iters=12, 
+                                           flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
         return flow_pred1, flow_pred2
         

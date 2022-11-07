@@ -218,7 +218,7 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
     avg_pair_err, pair_count = 0, 0
     patient_log = False
     
-    idx_log_1 = [0, 7, 15]
+    idx_log_1 = [0, 6, 13]
     l1_loss = torch.nn.L1Loss()
     
     for seq_id in range(0, len(test_dataset)):
@@ -249,29 +249,39 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
 def compute_avg_pair_error_group(model, test_dataset, args):
     avg_pair_err, pair_count = 0, 0
     l1_loss = torch.nn.L1Loss()
-    to_log = True
+    patient_log = True
+    idx_log_1 = [0, 6, 13]
+    cuda_to_use = "cuda:" + str(args.gpus[0])
     for seq_id in range(0, len(test_dataset)):
         seq, tmp_seq, patient_name = test_dataset[seq_id]
         seq_len, h, w = seq.shape
-        flow_pred_fwd, flow_pred_bwd = model(seq, tmp_seq, iters=args.iters, test_mode=True)
+        flow_pred_fwd, flow_pred_bwd = model(seq[None].to(cuda_to_use), tmp_seq[None].to(cuda_to_use), 
+                                             iters=args.iters, test_mode=True)
+        if (patient_name == 'patient113_z_3' or patient_name == 'patient102_z_1' or patient_name == 'patient123_z_3'):
+            patient_log = True
         for im1_id in range(0, seq_len):
             # Construct a seq with frame im1_id repeated
-            im1 = seq[im1_id,:,:].repeat(1, 1, 1)
+            im1 = seq[im1_id,:,:][None].to(cuda_to_use)
             for im2_id in range(0, seq_len): # Flow im1_id -> im2_id
-                im2 = seq[im2_id,:,:].repeat(1, 1, 1)
-                flow1_tmp = flow_pred_fwd[iters-1][im1_id,:,:,:].repeat(1, 1, 1, 1)
-                temp_p = seq_utils.warp_batch(im1, flow1_tmp, gpu=args.gpus[0])
-                flow2 = flow_pred_bwd[iters-1][im2_id,:,:,:].repeat(1, 1, 1, 1)
-                im2_p = seq_utils.warp_batch(temp_p, flow2, gpu=args.gpus[0])
-                err = l1_loss(im2, im2_p)
-                avg_pair_err += err
+                flow1_tmp = flow_pred_fwd[args.iters-1][0,im1_id,:,:,:]
+                temp_p = seq_utils.warp_seq(im1, flow1_tmp.repeat(1,1,1,1), gpu=args.gpus[0]) 
+                
+                im2 = seq[im2_id,:,:][None].to(cuda_to_use)
+                flow2 = flow_pred_bwd[args.iters-1][0,im2_id,:,:,:][None]
+                im2_p = seq_utils.warp_seq(temp_p, flow2, gpu=args.gpus[0])
+                
+                l1_loss_none = torch.nn.L1Loss(reduction='none')
+                err = l1_loss_none(im2, im2_p)
+                
+                avg_pair_err += l1_loss(im2, im2_p)
                 pair_count += 1
-                if (im2_id == im1_id+1 and to_log):
-                    log_test(im1, im2, im2_p, flow1_tmp+flow2, im1_id, im2_id)
-                    to_log = False
+                if (im1_id in idx_log_1 and im2_id == im1_id+1 and patient_log):
+                    flow1_2 = flow1_tmp+flow2
+                    log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
+        patient_log = False
     avg_pair_err /= pair_count
     return avg_pair_err
-        
+
 @torch.no_grad()
 def evaluate_acdc_test(args):
     f = open(args.output_file, "a")

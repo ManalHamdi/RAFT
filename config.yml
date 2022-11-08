@@ -107,7 +107,7 @@ Eval_peter:
     restore_ckpt: "mymodels/PairwiseFull/PairwiseFull_1.pth"
     add_normalisation: False
     model: 'group'
-    max_seq_len: 4
+    max_seq_len: 15
     
 Eval_8_PairwiseFull:
     <<: *eval_defaults

@@ -228,7 +228,7 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
         cuda_to_use = "cuda:" + str(args.gpus[0])
         seq_len, h, w = seq_original.shape
         
-        for frame_id in range(0, seq_len):
+        for frame_id in range(0, seq_len): # Flow frame_id -> i:  1-1 1-2 1-3 / 2-1 2-2 2-3 /
             seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
             flow_pred_fwd, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
                                      iters=args.iters, test_mode=True)
@@ -238,9 +238,18 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
                 err = l1_loss_none(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 avg_pair_err += l1_loss(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 pair_count += 1
-                if (frame_id in idx_log_1 and i == frame_id+1 and patient_log):
+                
+                can_log = frame_id in idx_log_1 and patient_log
+                # Flow 0 -> 1 Flow 6 -> 7 Flow 13 -> 14
+                log_consc = can_log and i == frame_id+1
+                # Flow 0 -> 4 Flow 6 -> 14 Flow 13 -> 5
+                log_none_consc = can_log and ((frame_id == 0 and i == 4) 
+                                           or (frame_id == 6 and i == 14) 
+                                           or (frame_id == 13 and i == 5))
+                if (log_consc or log_none_consc): # Log consecutive or none consec
                     log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[0, i,:,:], 
                              err, flow_pred_fwd[args.iters-1][0,i,:,:,:], patient_name, frame_id, i) # Flow frame_id -> i
+                                    
         patient_log = False
     avg_pair_err /= pair_count
     return avg_pair_err
@@ -275,9 +284,16 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 
                 avg_pair_err += l1_loss(im2, im2_p)
                 pair_count += 1
-                if (im1_id in idx_log_1 and im2_id == im1_id+1 and patient_log):
+                
+                can_log = im1_id in idx_log_1 and patient_log
+                log_consc = can_log and im2_id == im1_id+1
+                log_none_consc = can_log and ((im1_id == 0 and im2_id == 4)
+                                              or (im1_id == 6 and im2_id == 14)
+                                              or (im1_id == 13 and im2_id == 5))
+                if (log_consc or log_none_consc):
                     flow1_2 = flow1_tmp+flow2
                     log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
+                    
         patient_log = False
     avg_pair_err /= pair_count
     return avg_pair_err

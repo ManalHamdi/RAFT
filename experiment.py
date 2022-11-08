@@ -33,4 +33,5 @@ class Experiment:
             
         elif (config_dict['train_or_test'] == 'test'):
             self.output_file =  config_dict["output_file"]
+            self.iters = config_dict["iters"]
             

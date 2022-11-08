@@ -200,69 +200,104 @@ def log_additional_flow(flow_pred_fwd, flow_pred_bwd, patient_name):
                                                       wandb.Image(flow_1_6, caption=patient_name + " Flow 1->6")]})
 
 @torch.no_grad()
-def log_test(im1, im2, err, flow, patient_name, img1_idx, img2_idx):
+def log_test(im1, im2, im2_p, err, flow, patient_name, img1_idx, img2_idx):
     ''' Logging images, not GIF 
     '''
     flow = flow_vis.flow_to_color(flow.permute(1,2,0).cpu().detach().numpy())
     
-    log_name = patient_name + " Flow from "+ img1_idx + " to " + img2_idx + " " + mode + " Images "
+    log_name = "Consecutive Frames " + patient_name + " from "+ str(img1_idx) + " to " + str(img2_idx)
     
-    wandb.log({log_name: [wandb.Image(img1, caption=patient_name + " Image"+img1_idx), 
-                         wandb.Image(im2, caption=patient_name + " Image"+img2_idx),
-                         wandb.Image(error, caption=patient_name + " Error 2 and 2'"),
-                         wandb.Image(flow, caption=patient_name + " Flow"+img1_idx+"->"+img2_idx)]})
+    wandb.log({log_name: [wandb.Image(im1, caption=patient_name + " Image"+str(img1_idx)), 
+                         wandb.Image(im2, caption=patient_name + " Image"+str(img2_idx)),
+                         wandb.Image(im2_p, caption=patient_name + " Image"+str(img2_idx)+" predicted"),
+                         wandb.Image(err, caption=patient_name + " Error"+str(img2_idx)+" "+str(img2_idx)+"'"),
+                         wandb.Image(flow, caption=patient_name + " Flow"+str(img1_idx)+"->"+str(img2_idx))]})
     
 @torch.no_grad()
-def compute_avg_pair_error_pair(test_dataset, args):
+def compute_avg_pair_error_pair(model, test_dataset, args):
     avg_pair_err, pair_count = 0, 0
-    to_log = True 
+    patient_log = False
+    
+    idx_log_1 = [0, 6, 13]
     l1_loss = torch.nn.L1Loss()
+    
     for seq_id in range(0, len(test_dataset)):
         seq_original, _, patient_name = test_dataset[seq_id]
+        if (patient_name == 'patient113_z_3' or patient_name == 'patient102_z_1' or patient_name == 'patient123_z_3'):
+            patient_log = True
+        cuda_to_use = "cuda:" + str(args.gpus[0])
         seq_len, h, w = seq_original.shape
-        for frame_id in range(0, seq_len):
+        
+        for frame_id in range(0, seq_len): # Flow frame_id -> i:  1-1 1-2 1-3 / 2-1 2-2 2-3 /
             seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
-            flow_pred_fwd, _ = model(seq1, seq_original, iters=args.iters, test_mode=True)
-            seq_pred = seq_utils.warp_batch(seq1, flow_pred_fwd[iters-1], gpu=args.gpus[0])
+            flow_pred_fwd, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
+                                     iters=args.iters, test_mode=True)
+            seq_pred = seq_utils.warp_batch(seq1[None].to(cuda_to_use), flow_pred_fwd[args.iters-1], gpu=args.gpus[0])
             for i in range(0, seq_len):
-                err = l1_loss(seq_original[0,i,:,:], seq_pred[i,:,:])
-                avg_pair_err += err
+                l1_loss_none = torch.nn.L1Loss(reduction='none')
+                err = l1_loss_none(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
+                avg_pair_err += l1_loss(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 pair_count += 1
-                if (i == frame_id+1 and to_log):
-                    log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[i,:,:], 
-                             err, flow_pred_fwd[args.iters-1][0,i,:,:,:], frame_id, i) # Flow frame_id -> i
-                    to_log = False
-            
+                
+                can_log = frame_id in idx_log_1 and patient_log
+                # Flow 0 -> 1 Flow 6 -> 7 Flow 13 -> 14
+                log_consc = can_log and i == frame_id+1
+                # Flow 0 -> 4 Flow 6 -> 14 Flow 13 -> 5
+                log_none_consc = can_log and ((frame_id == 0 and i == 4) 
+                                           or (frame_id == 6 and i == 14) 
+                                           or (frame_id == 13 and i == 5))
+                if (log_consc or log_none_consc): # Log consecutive or none consec
+                    log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[0, i,:,:], 
+                             err, flow_pred_fwd[args.iters-1][0,i,:,:,:], patient_name, frame_id, i) # Flow frame_id -> i
+                                    
+        patient_log = False
     avg_pair_err /= pair_count
     return avg_pair_err
 
 @torch.no_grad()
-def compute_avg_pair_error_group(test_dataset, args):
+def compute_avg_pair_error_group(model, test_dataset, args):
     avg_pair_err, pair_count = 0, 0
     l1_loss = torch.nn.L1Loss()
-    to_log = True
+    patient_log = True
+    idx_log_1 = [0, 6, 13]
+    cuda_to_use = "cuda:" + str(args.gpus[0])
     for seq_id in range(0, len(test_dataset)):
         seq, tmp_seq, patient_name = test_dataset[seq_id]
         seq_len, h, w = seq.shape
-        flow_pred_fwd, flow_pred_bwd = model(seq, tmp_seq, iters=args.iters, test_mode=True)
+        flow_pred_fwd, flow_pred_bwd = model(seq[None].to(cuda_to_use), tmp_seq[None].to(cuda_to_use), 
+                                             iters=args.iters, test_mode=True)
+        if (patient_name == 'patient113_z_3' or patient_name == 'patient102_z_1' or patient_name == 'patient123_z_3'):
+            patient_log = True
         for im1_id in range(0, seq_len):
             # Construct a seq with frame im1_id repeated
-            im1 = seq[im1_id,:,:].repeat(1, 1, 1)
+            im1 = seq[im1_id,:,:][None].to(cuda_to_use)
             for im2_id in range(0, seq_len): # Flow im1_id -> im2_id
-                im2 = seq[im2_id,:,:].repeat(1, 1, 1)
-                flow1_tmp = flow_pred_fwd[iters-1][im1_id,:,:,:].repeat(1, 1, 1, 1)
-                temp_p = seq_utils.warp_batch(im1, flow1_tmp, gpu=args.gpus[0])
-                flow2 = flow_pred_bwd[iters-1][im2_id,:,:,:].repeat(1, 1, 1, 1)
-                im2_p = seq_utils.warp_batch(temp_p, flow2, gpu=args.gpus[0])
-                err = l1_loss(im2, im2_p)
-                avg_pair_err += err
+                flow1_tmp = flow_pred_fwd[args.iters-1][0,im1_id,:,:,:]
+                temp_p = seq_utils.warp_seq(im1, flow1_tmp.repeat(1,1,1,1), gpu=args.gpus[0]) 
+                
+                im2 = seq[im2_id,:,:][None].to(cuda_to_use)
+                flow2 = flow_pred_bwd[args.iters-1][0,im2_id,:,:,:][None]
+                im2_p = seq_utils.warp_seq(temp_p, flow2, gpu=args.gpus[0])
+                
+                l1_loss_none = torch.nn.L1Loss(reduction='none')
+                err = l1_loss_none(im2, im2_p)
+                
+                avg_pair_err += l1_loss(im2, im2_p)
                 pair_count += 1
-                if (im2_id == im1_id+1 and to_log):
-                    log_test(im1, im2, im2_p, flow1_tmp+flow2, im1_id, im2_id)
-                    to_log = False
+                
+                can_log = im1_id in idx_log_1 and patient_log
+                log_consc = can_log and im2_id == im1_id+1
+                log_none_consc = can_log and ((im1_id == 0 and im2_id == 4)
+                                              or (im1_id == 6 and im2_id == 14)
+                                              or (im1_id == 13 and im2_id == 5))
+                if (log_consc or log_none_consc):
+                    flow1_2 = flow1_tmp+flow2
+                    log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
+                    
+        patient_log = False
     avg_pair_err /= pair_count
     return avg_pair_err
-        
+
 @torch.no_grad()
 def evaluate_acdc_test(args):
     f = open(args.output_file, "a")
@@ -281,13 +316,13 @@ def evaluate_acdc_test(args):
     cuda_to_use = "cuda:" + str(args.gpus[0])
     
     test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.model, args.add_normalisation)
-    assert arg.model == 'group' or arg.model == 'pair'
-    if (arg.model == 'pair'):
-        avg_pair_err = compute_avg_pair_error_pair(test_dataset, args)
-    elif(arg.model == 'group'):
-        avg_pair_err = compute_avg_pair_error_group(test_dataset, args)
+    assert args.model == 'group' or args.model == 'pair'
+    if (args.model == 'pair'):
+        avg_pair_err = compute_avg_pair_error_pair(model, test_dataset, args)
+    elif(args.model == 'group'):
+        avg_pair_err = compute_avg_pair_error_group(model, test_dataset, args)
 
-    wandb.log({"Average pair error": all_pair_error})
+    wandb.log({"Average pair error": avg_pair_err})
             
 @torch.no_grad()
 def test_acdc(args):

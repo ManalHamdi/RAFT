@@ -99,6 +99,15 @@ Eval: &eval_defaults
     train_or_test: 'test'
     dropout: 0.0
     iters: 2
+
+Eval_peter:
+    <<: *eval_defaults
+    dataset_folder: "/home/peter_studt/Manal/TGRAFT/datasets/ACDC_processed/"
+    name: "PairwiseFull"
+    restore_ckpt: "mymodels/PairwiseFull/PairwiseFull_1.pth"
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 15
     
 Eval_8_PairwiseFull:
     <<: *eval_defaults

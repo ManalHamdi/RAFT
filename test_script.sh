@@ -11,4 +11,4 @@
 
 conda activate raft
 
-python3 evaluate.py --experiment "EvalPairwiseFull" --model "pair"
+python3 evaluate.py --experiment "Eval_12_GroupwiseFull_198"

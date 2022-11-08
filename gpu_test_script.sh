@@ -14,4 +14,4 @@ conda deactivate
 conda activate raft
 echo "Activated raft"
 
-python3 evaluate.py --experiment 'Eval_19_GroupwiseFull' 
+python3 evaluate.py --experiment 'Eval_config_19_GroupwiseFull_198' 

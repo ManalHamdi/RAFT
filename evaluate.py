@@ -229,6 +229,8 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
         seq_len, h, w = seq_original.shape
         
         for frame_id in range(0, seq_len): # Flow frame_id -> i:  1-1 1-2 1-3 / 2-1 2-2 2-3 /
+            if (frame_id % 5 != 0):
+                continue
             seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
             flow_pred_fwd, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
                                      iters=args.iters, test_mode=True)
@@ -258,7 +260,7 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
 def compute_avg_pair_error_group(model, test_dataset, args):
     avg_pair_err, pair_count = 0, 0
     l1_loss = torch.nn.L1Loss()
-    patient_log = True
+    patient_log = False
     idx_log_1 = [0, 6, 13]
     cuda_to_use = "cuda:" + str(args.gpus[0])
     for seq_id in range(0, len(test_dataset)):
@@ -269,6 +271,8 @@ def compute_avg_pair_error_group(model, test_dataset, args):
         if (patient_name == 'patient113_z_3' or patient_name == 'patient102_z_1' or patient_name == 'patient123_z_3'):
             patient_log = True
         for im1_id in range(0, seq_len):
+            if (im1_id % 5 != 0):
+                continue
             # Construct a seq with frame im1_id repeated
             im1 = seq[im1_id,:,:][None].to(cuda_to_use)
             for im2_id in range(0, seq_len): # Flow im1_id -> im2_id
@@ -455,7 +459,7 @@ def validate_kitti(model, iters=24):
     return {'kitti-epe': epe, 'kitti-f1': f1}
 
 if __name__ == '__main__':
-    with open("config.yml", "r") as stream:
+    with open("config_eval.yml", "r") as stream:
         try:
             d = yaml.safe_load(stream)
         except yaml.YAMLError as exc:

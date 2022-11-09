@@ -77,14 +77,14 @@ EvalX_19config_PairwiseFwd358: &vs_pairwise_defaults
     restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_358.pth"
 #-------------------TRYING DIFFERENT SEQ LENGTHS---------------------
 Eval8_19config_GroupwiseFull_358:
-    <<: &vs_groupwise_defaults
+    <<: *vs_groupwise_defaults
     max_seq_len: 8
 Eval8_19config_PairwiseFull_358:
-    <<: &vs_pairwise_defaults
+    <<: *vs_pairwise_defaults
     max_seq_len: 8
 Eval19_19config_GroupwiseFull_358:
-    <<: &vs_groupwise_defaults
+    <<: *vs_groupwise_defaults
     max_seq_len: 19
 Eval19_19config_PairwiseFull_358:
-    <<: &vs_pairwise_defaults
+    <<: *vs_pairwise_defaults
     max_seq_len: 19

@@ -1,0 +1,90 @@
+# This config file uses the new evaluation metric implementation: avg pair error
+
+Eval: &eval_defaults
+    dataset: acdc
+    dataset_folder: "/home/guests/manal_hamdi/manal/TGRAFT/datasets/ACDC_processed/"
+    small: False
+    mixed_precision: False
+    alternate_corr: False
+    gpus: [0]
+    gamma: 0.8
+    batch_size: 1
+    output_file: "debugging_exp_eval_results.txt"
+    train_or_test: 'test'
+    dropout: 0.0
+    iters: 2
+
+Eval25_19config_IntraGroupwise_200: &intra_groupwise_defaults
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'group'
+    max_seq_len: 25
+    
+Eval25_19config_GroupwiseFull_200:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull200"
+    restore_ckpt: "october_checkpoints/GroupwiseFull200/GroupwiseFull200_198.pth"
+    
+Eval25_19config_GroupwisePhoto_200:
+    <<: *intra_groupwise_defaults
+    name: "GroupwisePhoto200"
+    restore_ckpt: "october_checkpoints/GroupwisePhoto/GroupwisePhoto_198.pth"
+    
+Eval25_19config_GroupwisePhotoSpa_200:
+    <<: *intra_groupwise_defaults
+    name: "GroupwisePhotoSpa200"
+    restore_ckpt: "october_checkpoints/GroupwisePhotoSpa/GroupwisePhotoSpa_198.pth"
+    
+Eval25_19config_GroupwisePhotoTemp_200:
+    <<: *intra_groupwise_defaults
+    name: "GroupwisePhotoTemp200"
+    restore_ckpt: "october_checkpoints/GroupwisePhotoTemp/GroupwisePhotoTemp_198.pth"
+
+Eval25_19config_GroupwiseFull_358:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_358"
+    restore_ckpt: "october_checkpoints/GroupwiseFull/GroupwiseFull_358.pth"
+    
+Eval25_19config_PairwiseFwd358:
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 25
+    name: "PairwiseFull_358"
+    restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_358.pth"  
+    
+Eval25_19config_PairwiseFwd400:
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 25
+    name: "PairwiseFull"
+    restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_398.pth"
+
+#-------------------TRYING DIFFERENT SEQ LENGTHS---------------------
+EvalX_19config_GroupwiseFull_358: &vs_groupwise_defaults
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'group'
+    name: "GroupwiseFull358"
+    restore_ckpt: "october_checkpoints/GroupwiseFull/GroupwiseFull_358.pth"
+    
+EvalX_19config_PairwiseFwd358: &vs_pairwise_defaults
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'pair'
+    name: "PairwiseFull358"
+    restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_358.pth"
+#-------------------TRYING DIFFERENT SEQ LENGTHS---------------------
+Eval8_19config_GroupwiseFull_358:
+    <<: &vs_groupwise_defaults
+    max_seq_len: 8
+Eval8_19config_PairwiseFull_358:
+    <<: &vs_pairwise_defaults
+    max_seq_len: 8
+Eval19_19config_GroupwiseFull_358:
+    <<: &vs_groupwise_defaults
+    max_seq_len: 19
+Eval19_19config_PairwiseFull_358:
+    <<: &vs_pairwise_defaults
+    max_seq_len: 19

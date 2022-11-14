@@ -19,7 +19,8 @@ DefaultExperiment: &defaults
     mixed_precision: False
     restore_ckpt: null
     alternate_corr: False
-    
+    composed_flows: False
+
 GroupwiseFull:
     <<: *defaults
     name: 'GroupwiseFull'
@@ -30,7 +31,52 @@ GroupwiseFull:
     add_normalisation: False
     model: 'group'
     train_or_test: 'train'
+#------------------- Increasing weight of spa ------------------------
+GroupwiseFull_100spa:
+    <<: *defaults
+    name: 'GroupwiseFull_100spa'
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 400
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
 
+GroupwiseFull_50spa:
+    <<: *defaults
+    name: 'GroupwiseFull_50spa'
+    beta_photo: 1
+    beta_spatial: 50.0
+    beta_temporal: 10.0
+    num_steps: 400
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+
+GroupwiseFull_20spa:
+    <<: *defaults
+    name: 'GroupwiseFull_20spa'
+    beta_photo: 1
+    beta_spatial: 20.0
+    beta_temporal: 10.0
+    num_steps: 400
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+
+GroupwiseFull_compFlow:
+    <<: *defaults
+    name: 'GroupwiseFull_compFlow'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+#------------------- END ------------------------
 GroupwiseFull200:
     <<: *defaults
     name: 'GroupwiseFull200'

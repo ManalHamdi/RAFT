@@ -91,7 +91,7 @@ def log_gifs(img_gt, img_pred, temp_gt, temp_pred, flow_forward, flow_backward, 
     
 def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_backward, epoch, mode, i_batch, args):
     '''
-    image1_batch: [B, N, H, W] [B,N,H, W]
+    image1_batch: [B, N, H, W] 
     template: [B, N, H, W]
     flow_predictions: list len iters, type tensor [B, N, 2, H, W]
     flow1 + imge = temp_generated --forward
@@ -114,10 +114,23 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
         Charbonnier_Loss = CharbonnierLoss()
         photo_loss = Charbonnier_Loss(temp_pred, temp_gt) #[B, N] loss batch in iteration i
         
+                
         if (args.model == 'group'):
             img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr], gpu=args.gpus[0]) # [B, N, H, W]
             partial_img_error += l1_loss(img_pred, img_gt)
             photo_loss += Charbonnier_Loss(img_pred, img_gt)
+            
+            if (args.composed_flows):
+                seq_len = img_gt.shape[1]
+                idx_rnd = torch.randperm(seq_len)
+                seq_img_rdn = torch.zeros_like(img_gt)
+                comp_flow = torch.zeros_like(flow_backward[itr]) # {Ii, Ij} => FFi + BFj = Ij',  [B, N, 2, H, W]
+                for i in range(0, seq_len):
+                    seq_img_rdn[0,i,:,:] = img_gt[0,idx_rnd[i],:,:]
+                    comp_flow[0,i,:,:,:] = flow_forward[itr][0,i,:,:,:] + flow_backward[itr][0,idx_rnd[i],:,:,:]
+                img_pred_comp = seq_utils.warp_batch(img_gt, comp_flow, gpu=args.gpus[0]) # [B, N, H, W]
+                photo_loss += Charbonnier_Loss(img_pred_comp, seq_img_rdn)
+                
             
         partial_photo_loss += photo_loss 
         

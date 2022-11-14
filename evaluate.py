@@ -229,13 +229,19 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
         seq_len, h, w = seq_original.shape
         
         for frame_id in range(0, seq_len): # Flow frame_id -> i:  1-1 1-2 1-3 / 2-1 2-2 2-3 /
+            '''
             if (frame_id % 5 != 0):
                 continue
+            '''
             seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
             flow_pred_fwd, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
                                      iters=args.iters, test_mode=True)
             seq_pred = seq_utils.warp_batch(seq1[None].to(cuda_to_use), flow_pred_fwd[args.iters-1], gpu=args.gpus[0])
             for i in range(0, seq_len):
+                '''
+                if (i != frame_id):
+                    continue
+                '''
                 l1_loss_none = torch.nn.L1Loss(reduction='none')
                 err = l1_loss_none(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 avg_pair_err += l1_loss(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
@@ -270,18 +276,28 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                                              iters=args.iters, test_mode=True)
         if (patient_name == 'patient113_z_3' or patient_name == 'patient102_z_1' or patient_name == 'patient123_z_3'):
             patient_log = True
+        
         for im1_id in range(0, seq_len):
+            '''
             if (im1_id % 5 != 0):
                 continue
+            '''
             # Construct a seq with frame im1_id repeated
             im1 = seq[im1_id,:,:][None].to(cuda_to_use)
             for im2_id in range(0, seq_len): # Flow im1_id -> im2_id
+                '''
+                if (im1_id != im2_id):
+                    continue
+                '''
                 flow1_tmp = flow_pred_fwd[args.iters-1][0,im1_id,:,:,:]
                 temp_p = seq_utils.warp_seq(im1, flow1_tmp.repeat(1,1,1,1), gpu=args.gpus[0]) 
                 
                 im2 = seq[im2_id,:,:][None].to(cuda_to_use)
                 flow2 = flow_pred_bwd[args.iters-1][0,im2_id,:,:,:][None]
-                im2_p = seq_utils.warp_seq(temp_p, flow2, gpu=args.gpus[0])
+                #im2_p = seq_utils.warp_seq(temp_p, flow2, gpu=args.gpus[0])
+                ''' seq_utils.warp_seq(IM1, flow1_tmp+flow2) CHECK IF SAME'''
+                im2_p = seq_utils.warp_seq(im1, flow1_tmp[None]+flow2)
+                #assert torch.equal(seq_utils.warp_seq(im1, flow1_tmp[None]+flow2), im2_p)
                 
                 l1_loss_none = torch.nn.L1Loss(reduction='none')
                 err = l1_loss_none(im2, im2_p)

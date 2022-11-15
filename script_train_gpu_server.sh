@@ -17,6 +17,6 @@ conda info --envs
 
 #python3 -u train.py --experiment "GroupwiseFull_100spa" 
 #python3 -u train.py --experiment "GroupwiseFull_50spa" 
-#python3 -u train.py --experiment "GroupwiseFull_20spa" 
-python3 -u train.py --experiment "GroupwiseFull_compFlow"
+python3 -u train.py --experiment "GroupwiseFull" 
+#python3 -u train.py --experiment "GroupwiseFull_compFlow"
  

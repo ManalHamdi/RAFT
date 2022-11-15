@@ -113,7 +113,6 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
         partial_temp_error += l1_loss(temp_pred, temp_gt) 
         Charbonnier_Loss = CharbonnierLoss()
         photo_loss = Charbonnier_Loss(temp_pred, temp_gt) #[B, N] loss batch in iteration i
-        
                 
         if (args.model == 'group'):
             img_pred = seq_utils.warp_batch(temp_gt, flow_backward[itr], gpu=args.gpus[0]) # [B, N, H, W]

@@ -23,7 +23,7 @@ DefaultExperiment: &defaults
 
 GroupwiseFull:
     <<: *defaults
-    name: 'GroupwiseFull'
+    name: 'GroupwiseFull_4'
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 10.0

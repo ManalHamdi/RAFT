@@ -142,6 +142,7 @@ def validate_acdc(model, args, mode, epoch, iters=2):
     out_list = []
     total_loss, img_total_error, tmp_total_error, total_spa_loss, total_temp_loss = 0, 0, 0, 0, 0
     for val_id in range(0, len(val_dataset)):
+        print("passed validation")
         image_batch, template_batch, patient_slice_id_batch = val_dataset[val_id]
         image_batch = image_batch[None].to(cuda_to_use)
         template_batch = template_batch[None].to(cuda_to_use)

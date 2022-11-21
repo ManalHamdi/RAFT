@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH -J "100spa"   # job name
+#SBATCH -J "pair200"   # job name
 #SBATCH --mail-user=manal.hamdi@tum.de   # email address
 #SBATCH --mail-type=END  # send at the end
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
@@ -17,6 +17,7 @@ conda info --envs
 
 #python3 -u train.py --experiment "GroupwiseFull_100spa" 
 #python3 -u train.py --experiment "GroupwiseFull_50spa" 
-python3 -u train.py --experiment "GroupwiseFull" 
+#python3 -u train.py --experiment "GroupwiseFull_20spa" 
 #python3 -u train.py --experiment "GroupwiseFull_compFlow"
+python3 -u train.py --experiment "PairwiseFull200"
  

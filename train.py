@@ -174,7 +174,8 @@ def train(args):
             loss_epoch += batch_loss_dict["Total"].item() / len(train_loader)
             spa_epoch += batch_loss_dict["Spatial"].item() / len(train_loader)
             temp_epoch += batch_loss_dict["Temporal"].item() / len(train_loader)
-            img_error_epoch += batch_loss_dict["Img Error"] / len(train_loader)
+            if (config.model == 'group'):
+                img_error_epoch += batch_loss_dict["Img Error"].item() / len(train_loader)
             tmp_error_epoch += batch_loss_dict["Temp Error"].item() / len(train_loader)
             
         wandb.log({"Training Total Loss": loss_epoch})

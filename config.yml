@@ -23,7 +23,7 @@ DefaultExperiment: &defaults
 
 GroupwiseFull:
     <<: *defaults
-    name: 'GroupwiseFull_4'
+    name: 'GroupwiseFull'
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 10.0
@@ -76,10 +76,45 @@ GroupwiseFull_compFlow:
     model: 'group'
     train_or_test: 'train'
     composed_flows: True
+    
+GroupwiseFull_compFlow_100spa:
+    <<: *defaults
+    name: 'GroupwiseFull_compFlow_100spa'
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+
+GroupwiseFull_compFlow_1000spa:
+    <<: *defaults
+    name: 'GroupwiseFull_compFlow_1000spa'
+    beta_photo: 1
+    beta_spatial: 1000.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
 #------------------- END ------------------------
 GroupwiseFull200:
     <<: *defaults
     name: 'GroupwiseFull200'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    
+GroupwiseFull_PCA_200:
+    <<: *defaults
+    name: 'GroupwiseFull_PCA_200'
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 10.0
@@ -128,6 +163,17 @@ PairwiseFull:
     beta_spatial: 10.0
     beta_temporal: 0.0
     num_steps: 400
+    add_normalisation: False
+    model: 'pair'
+    train_or_test: 'train'
+
+PairwiseFull200:
+    <<: *defaults
+    name: 'PairwiseFull200'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 0.0
+    num_steps: 200
     add_normalisation: False
     model: 'pair'
     train_or_test: 'train'

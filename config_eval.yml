@@ -3,7 +3,7 @@
 Eval: &eval_defaults
     dataset: acdc
     #dataset_folder: "/home/guests/manal_hamdi/manal/TGRAFT/datasets/ACDC_processed/"
-    dataset_folder: "/home/guests/manal_hamdi/manal/TGRAFT/datasets/ACDC_processed/"
+    dataset_folder: "/home/peter_studt/Manal/TGRAFT/datasets/ACDC_processed/"
     small: False
     mixed_precision: False
     alternate_corr: False
@@ -22,6 +22,16 @@ Eval25_19config_IntraGroupwise_200: &intra_groupwise_defaults
     model: 'group'
     max_seq_len: 25
 #----------------------------------------------------------------------------------------    
+Eval25_19config_GroupwiseFullPCA_100:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFullPCA_100"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_PCA_200/GroupwiseFull_PCA_200_100.pth"
+
+Eval25_19config_GroupwiseFullAvg_100:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull200_100"
+    restore_ckpt: "october_checkpoints/GroupwiseFull200/GroupwiseFull200_100.pth"
+    
 Eval25_19config_GroupwiseFullComp_198:
     <<: *intra_groupwise_defaults
     name: "GroupwiseFull_compFlow_198"
@@ -49,7 +59,7 @@ Eval25_19config_PairwiseFwd198:
 Eval25_19config_GroupwiseFull_398:
     <<: *intra_groupwise_defaults
     name: "GroupwiseFull400"
-    restore_ckpt: "october_checkpoints/GroupwiseFull200/GroupwiseFull_398.pth"
+    restore_ckpt: "october_checkpoints/GroupwiseFull/GroupwiseFull_398.pth"
     
 Eval25_19config_GroupwiseFull_200:
     <<: *intra_groupwise_defaults

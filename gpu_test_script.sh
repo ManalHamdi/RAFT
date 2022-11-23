@@ -5,8 +5,8 @@
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --gres=gpu:1  # gpus if needed
-#SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/error_Avg_19_noNorm_full_198.err
-#SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/output_Avg_19_noNorm_full_198.out 
+##SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/error_Avg_19_noNorm_full_198.err
+##SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/output_Avg_19_noNorm_full_198.out 
 # run your program here
 
 module load python/anaconda3

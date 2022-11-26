@@ -148,13 +148,13 @@ def train(args):
         loss_epoch, tmp_error_epoch, img_error_epoch, spa_epoch, temp_epoch = 0, 0, 0, 0, 0
         for i_batch, data_blob in enumerate(train_loader):
             optimizer.zero_grad()
-            image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
+            #image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
             
-            #image_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
+            image_batch, patient_slice_id_batch = [x for x in data_blob] #  [B,C,H,W] new [B,N,H,W], [B,N,H,W]
             #print(torch.__version__)
 
             #print("Input to TemplateFormer Shape is", image_batch.shape)
-            #template_batch = seq_utils.TemplateFormer()(image_batch.float())
+            template_batch = seq_utils.TemplateFormer()(image_batch.float())
             #print("img batch shape", image_batch.shape, "temp shape" ,template_batch.shape)
             image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
             

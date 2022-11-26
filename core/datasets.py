@@ -103,8 +103,8 @@ class ACDCDataset(data.Dataset):
             seq_tensor = self.tensor_normalization(seq_tensor, self.mode)
             seq2 = self.tensor_normalization(seq2, self.mode)
                 
-        return seq_tensor[:, 0:h-h%8, 0:w-w%8], seq2[:, 0:h-h%8, 0:w-w%8], patient_slice_id
-        #return seq_tensor[:, 0:h-h%8, 0:w-w%8], patient_slice_id
+        #return seq_tensor[:, 0:h-h%8, 0:w-w%8], seq2[:, 0:h-h%8, 0:w-w%8], patient_slice_id
+        return seq_tensor[:, 0:h-h%8, 0:w-w%8], patient_slice_id
 
 class FlowDataset(data.Dataset):
     def __init__(self, aug_params=None, sparse=False):

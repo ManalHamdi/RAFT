@@ -12,7 +12,7 @@
 # run your program here
 
 module load python/anaconda3
-conda activate temp
+conda activate raftnew
 conda info --envs
 
 #python3 -u train.py --experiment "GroupwiseFull_100spa" 
@@ -21,4 +21,4 @@ conda info --envs
 #python3 -u train.py --experiment "GroupwiseFull_compFlow"
 #python -u train.py --experiment "GroupwiseFull_compFlow_100spa"
  
-python -u train.py --experiment "GroupwiseFull_fwdbwdcomp_photo_100spa_temp"
+python -u train.py --experiment "GroupwiseFull_LearnFlow_100spa"

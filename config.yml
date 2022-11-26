@@ -35,7 +35,7 @@ GroupwiseFull:
     
 GroupwiseFull_fwdbwdcomp_photo_spa_temp:
     <<: *defaults
-    name: 'GroupwiseFull_fwdbwdcomp_photo_spa_temp'
+    name: 'pop'
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 10.0
@@ -48,7 +48,7 @@ GroupwiseFull_fwdbwdcomp_photo_spa_temp:
     
 GroupwiseFull_fwdbwdcomp_photo_100spa_temp:
     <<: *defaults
-    name: 'GroupwiseFull_fwdbwdcomp_photo_100spa_temp'
+    name: 'bluby'
     beta_photo: 1
     beta_spatial: 100.0
     beta_temporal: 10.0
@@ -169,7 +169,7 @@ GroupwiseFull_compFlow_1000spa:
     
 GroupwiseFull_LearnFlow_100spa:
     <<: *defaults
-    name: 'GroupwiseFull_LearnFlow_100spa'
+    name: 'learnable_1-10-10'
     beta_photo: 1
     beta_spatial: 100.0
     beta_temporal: 10.0
@@ -177,7 +177,7 @@ GroupwiseFull_LearnFlow_100spa:
     add_normalisation: False
     model: 'group'
     train_or_test: 'train'
-    composed_flows: True
+    composed_flows: False
 #------------------- END ------------------------
 GroupwiseFull200:
     <<: *defaults

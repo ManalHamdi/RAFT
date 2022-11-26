@@ -6,6 +6,7 @@ import random
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 from sklearn.decomposition import PCA
+import torch.nn as nn
 
 def generate_image(img_batch, template_batch, flow1, flow2):
     '''img and temp [N, H, W]
@@ -37,6 +38,8 @@ def generate_template(frame_seq, mode):
             return frame_seq.mean(dim=0)
     elif (mode == "pca"):
         return construct_template_pca(frame_seq)
+    elif (mode == "learn"):
+        return TemplateFormer()(frame_seq)
     else:
         print("This mode", mode, "is not supported for template generation.")
 
@@ -112,3 +115,22 @@ def warp_batch(batch_seq, batch_flo, gpu=0):
         warped_seq_list.append(warped_seq)
     warped_batch = torch.stack(warped_seq_list, dim=0) # [B, N, H, W]
     return warped_batch
+
+class TemplateFormer(nn.Module):
+    def __init__(self, ch_num=[64, 32, 1], circular=3, average_init=True):
+        super(TemplateFormer, self).__init__()
+        self.conv1 = nn.Conv1d(1, 1, (3, 1, 1), 1, 1)
+        layers = []
+        ch_num = [1] + ch_num
+        for i, ch in enumerate(ch_num):
+            conv = nn.Conv1d(ch, ch_num[i+1], (circular*2+1, 1, 1), 1, (circular, 0, 0))
+            if average_init:
+                torch.nn.init.constant_(conv.weight, 1/(circular*2+1))
+            layers.append(conv)
+            if i == len(ch_num) - 2:
+                break
+        self.seq = nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.seq(x[:,None,...])
+        return x[:,0,...]

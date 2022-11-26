@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-#SBATCH -J "100spa"   # job name
+#SBATCH -J "allcomp"   # job name
 #SBATCH --mail-user=manal.hamdi@tum.de   # email address
 #SBATCH --mail-type=END  # send at the end
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
@@ -16,7 +16,13 @@ echo "Activated raft"
 
 #python3 evaluate.py --experiment 'Eval_config_19_GroupwiseFull_198' 
 
-python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_398"
+#python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_photocomp_108"
+#python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_allcomp_108"
+#python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_100comp_1000spa_108"
+#python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull200_108"
+python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_1000spa_200"
+
+
 
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_100spa_198"
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198"

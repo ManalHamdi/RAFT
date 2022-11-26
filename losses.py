@@ -120,6 +120,7 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
             photo_loss += Charbonnier_Loss(img_pred, img_gt)
             
             if (args.composed_flows):
+                #photo_loss = 0
                 seq_len = img_gt.shape[1]
                 idx_rnd = torch.randperm(seq_len)
                 seq_img_rdn = torch.zeros_like(img_gt)
@@ -128,8 +129,7 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
                     seq_img_rdn[0,i,:,:] = img_gt[0,idx_rnd[i],:,:]
                     comp_flow[0,i,:,:,:] = flow_forward[itr][0,i,:,:,:] + flow_backward[itr][0,idx_rnd[i],:,:,:]
                 img_pred_comp = seq_utils.warp_batch(img_gt, comp_flow, gpu=args.gpus[0]) # [B, N, H, W]
-                photo_loss += Charbonnier_Loss(img_pred_comp, seq_img_rdn)
-                
+                photo_loss += args.beta_comp * Charbonnier_Loss(img_pred_comp, seq_img_rdn)
             
         partial_photo_loss += photo_loss 
         
@@ -142,6 +142,10 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
             if (args.model == 'group'):
                 spatial_loss += Spatial_Loss(flow_backward[itr][0,:,:,:,:], temp_gt)
                 temporal_loss += Temporal_Loss(flow_backward[itr][0,:,:,:,:])
+                s = False
+                if (args.composed_flows and s == True):
+                    spatial_loss += Spatial_Loss(comp_flow[0,:,:,:,:], seq_img_rdn) 
+                    temporal_loss += Temporal_Loss(comp_flow[0,:,:,:,:]) 
                 
             partial_spatial_loss += spatial_loss
             partial_temporal_loss += temporal_loss 

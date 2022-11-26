@@ -2,8 +2,8 @@
 
 Eval: &eval_defaults
     dataset: acdc
-    #dataset_folder: "/home/guests/manal_hamdi/manal/TGRAFT/datasets/ACDC_processed/"
-    dataset_folder: "/home/peter_studt/Manal/TGRAFT/datasets/ACDC_processed/"
+    dataset_folder: "/home/guests/manal_hamdi/manal/TGRAFT/datasets/ACDC_processed/"
+    #dataset_folder: "/home/peter_studt/Manal/TGRAFT/datasets/ACDC_processed/"
     small: False
     mixed_precision: False
     alternate_corr: False
@@ -15,13 +15,53 @@ Eval: &eval_defaults
     dropout: 0.0
     iters: 2
 
-
 Eval25_19config_IntraGroupwise_200: &intra_groupwise_defaults
     <<: *eval_defaults
     add_normalisation: False
     model: 'group'
     max_seq_len: 25
 #----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------   
+Eval25_19config_GroupwiseFull_photocomp_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_photocomp_108"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_photocomp/GroupwiseFull_photocomp_108.pth"
+Eval25_19config_GroupwiseFull_allcomp_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_allcomp_108"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_allcomp/GroupwiseFull_allcomp_108.pth"
+Eval25_19config_GroupwiseFull_100comp_1000spa_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_100comp_1000spa"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_100comp_1000spa/GroupwiseFull_100comp_1000spa_108.pth"
+Eval25_19config_GroupwiseFull200_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull200_108"
+    restore_ckpt: "october_checkpoints/GroupwiseFull200/GroupwiseFull200_108.pth"
+Eval25_19config_PairwiseFwd200_108:
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 25
+    name: "PairwiseFull"
+    restore_ckpt: "october_checkpoints/PairwiseFull200/PairwiseFull200_108.pth"
+    
+Eval25_19config_GroupwiseFullComp_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_compFlow_108"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_compFlow/GroupwiseFull_compFlow_108.pth"
+    
+Eval25_19config_GroupwiseFull_compFlow_1000spa_200:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_compFlow_1000spa"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_compFlow_1000spa/GroupwiseFull_compFlow_1000spa_198.pth"
+#----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------    
+
 Eval25_19config_GroupwiseFullPCA_100:
     <<: *intra_groupwise_defaults
     name: "GroupwiseFullPCA_100"
@@ -55,6 +95,13 @@ Eval25_19config_PairwiseFwd198:
     max_seq_len: 25
     name: "PairwiseFull"
     restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_198.pth"
+Eval25_19config_PairwiseFwd200_198:
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 25
+    name: "PairwiseFull"
+    restore_ckpt: "october_checkpoints/PairwiseFull200/PairwiseFull200_198.pth"
 #----------------------------------------------------------------------------------------
 Eval25_19config_GroupwiseFull_398:
     <<: *intra_groupwise_defaults

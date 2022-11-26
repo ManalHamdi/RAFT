@@ -20,6 +20,7 @@ DefaultExperiment: &defaults
     restore_ckpt: null
     alternate_corr: False
     composed_flows: False
+    beta_comp: 1.0
 
 GroupwiseFull:
     <<: *defaults
@@ -31,7 +32,72 @@ GroupwiseFull:
     add_normalisation: False
     model: 'group'
     train_or_test: 'train'
+    
+GroupwiseFull_fwdbwdcomp_photo_spa_temp:
+    <<: *defaults
+    name: 'GroupwiseFull_fwdbwdcomp_photo_spa_temp'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 10.0
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+    
+GroupwiseFull_fwdbwdcomp_photo_100spa_temp:
+    <<: *defaults
+    name: 'GroupwiseFull_fwdbwdcomp_photo_100spa_temp'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 100.0
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
 #------------------- Increasing weight of spa ------------------------
+GroupwiseFull_100comp_1000spa:
+    <<: *defaults
+    name: 'GroupwiseFull_100comp_1000spa'
+    beta_photo: 1
+    beta_spatial: 1000.0
+    beta_temporal: 10.0
+    beta_comp: 100.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    
+GroupwiseFull_allcomp:
+    <<: *defaults
+    name: 'GroupwiseFull_allcomp'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 10.0
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+
+    
+GroupwiseFull_photocomp:
+    <<: *defaults
+    name: 'GroupwiseFull_photocomp31'
+    beta_photo: 1
+    beta_spatial: 10.0
+    beta_temporal: 10.0
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+
 GroupwiseFull_100spa:
     <<: *defaults
     name: 'GroupwiseFull_100spa'
@@ -79,7 +145,7 @@ GroupwiseFull_compFlow:
     
 GroupwiseFull_compFlow_100spa:
     <<: *defaults
-    name: 'GroupwiseFull_compFlow_100spa'
+    name: 'GroupwiseFull_compFlow_100spa22'
     beta_photo: 1
     beta_spatial: 100.0
     beta_temporal: 10.0
@@ -100,10 +166,22 @@ GroupwiseFull_compFlow_1000spa:
     model: 'group'
     train_or_test: 'train'
     composed_flows: True
+    
+GroupwiseFull_LearnFlow_100spa:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnFlow_100spa'
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
 #------------------- END ------------------------
 GroupwiseFull200:
     <<: *defaults
-    name: 'GroupwiseFull200'
+    name: 'GroupwiseFull200_learn'
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 10.0

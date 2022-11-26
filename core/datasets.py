@@ -72,9 +72,7 @@ class ACDCDataset(data.Dataset):
         seq = nib.load(self.folder_path+self.mode+"/"+seq_path).get_fdata() # np array [H, W, N] 
         
         patient_slice_id = seq_path.split(".")[0] # remove .nii.gz
-        
-        #seq = self.image_normalization(seq)
-        
+                
         to_tensor = tv.transforms.ToTensor()
         seq_tensor = to_tensor(seq) # tensor [N, H, W]
         
@@ -91,6 +89,7 @@ class ACDCDataset(data.Dataset):
         seq2 = torch.zeros_like(seq_tensor)
         
         assert self.model == 'group' or self.model == 'pair'
+        
         if (self.model == 'group'):
             seq2 = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
             seq2 = seq2.repeat(seq_length, 1, 1)
@@ -99,12 +98,13 @@ class ACDCDataset(data.Dataset):
             seq2 = torch.zeros_like(seq_tensor)
             for i in range(0, seq_length):
                 seq2[i,:,:] = seq_tensor[idx_rnd[i],:,:]
-
+        
         if (self.add_normalisation):
             seq_tensor = self.tensor_normalization(seq_tensor, self.mode)
             seq2 = self.tensor_normalization(seq2, self.mode)
                 
         return seq_tensor[:, 0:h-h%8, 0:w-w%8], seq2[:, 0:h-h%8, 0:w-w%8], patient_slice_id
+        #return seq_tensor[:, 0:h-h%8, 0:w-w%8], patient_slice_id
 
 class FlowDataset(data.Dataset):
     def __init__(self, aug_params=None, sparse=False):

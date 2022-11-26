@@ -142,8 +142,8 @@ def disimilarity_loss(img_gt, temp_gt, patient_slice_id_gt, flow_forward, flow_b
             if (args.model == 'group'):
                 spatial_loss += Spatial_Loss(flow_backward[itr][0,:,:,:,:], temp_gt)
                 temporal_loss += Temporal_Loss(flow_backward[itr][0,:,:,:,:])
-                s = False
-                if (args.composed_flows and s == True):
+                #s = False
+                if (args.composed_flows):
                     spatial_loss += Spatial_Loss(comp_flow[0,:,:,:,:], seq_img_rdn) 
                     temporal_loss += Temporal_Loss(comp_flow[0,:,:,:,:]) 
                 

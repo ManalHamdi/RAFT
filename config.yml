@@ -50,8 +50,8 @@ GroupwiseFull_fwdbwdcomp_photo_100spa_temp:
     <<: *defaults
     name: 'GroupwiseFull_fwdbwdcomp_photo_100spa_temp'
     beta_photo: 1
-    beta_spatial: 10.0
-    beta_temporal: 100.0
+    beta_spatial: 100.0
+    beta_temporal: 10.0
     beta_comp: 1.0
     num_steps: 200
     add_normalisation: False

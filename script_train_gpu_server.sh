@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH -J "photocomp"   # job name
+#SBATCH -J "compall100"   # job name
 #SBATCH --mail-user=manal.hamdi@tum.de   # email address
 #SBATCH --mail-type=END  # send at the end
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
@@ -21,4 +21,4 @@ conda info --envs
 #python3 -u train.py --experiment "GroupwiseFull_compFlow"
 #python -u train.py --experiment "GroupwiseFull_compFlow_100spa"
  
-python -u train.py --experiment "GroupwiseFull_photocomp"
+python -u train.py --experiment "GroupwiseFull_fwdbwdcomp_photo_100spa_temp"

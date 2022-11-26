@@ -30,6 +30,7 @@ class Experiment:
             self.beta_spatial = config_dict["beta_spatial"]
             self.beta_temporal = config_dict["beta_temporal"]
             self.composed_flows = config_dict["composed_flows"]
+            self.beta_comp = config_dict["beta_comp"]
             
             
         elif (config_dict['train_or_test'] == 'test'):

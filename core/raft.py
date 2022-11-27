@@ -7,6 +7,7 @@ from update import BasicUpdateBlock, SmallUpdateBlock
 from extractor import BasicEncoder, SmallEncoder
 from corr import CorrBlock, AlternateCorrBlock
 from utils.utils import bilinear_sampler, coords_grid, upflow8
+import sequence_handling_utils as seq_utils
 
 try:
     autocast = torch.cuda.amp.autocast
@@ -149,12 +150,17 @@ class RAFT(nn.Module):
             image and template batch are tensors [B, N, H, W] // instead of [B, C, H, W]
             Returns list of flow estimations with length iters, and each item of the list is [B, N, 2, H, W]// [B, 2, H, W]
         """
-        
+        template_model = nn.DataParallel(seq_utils.TemplateFormer(), device_ids=self.args.gpus)
+        if (self.args.learn_temp):
+            template_batch = template_model(image_batch.float())
+            cuda_to_use = "cuda:" + str(self.args.gpus[0])
+            image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
+            
         flow_pred1 = self.predict_flow(image_batch, template_batch, iters=12, 
                                        flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
         flow_pred2 = None
         if (self.args.model == 'group'):
             flow_pred2 = self.predict_flow(template_batch, image_batch, iters=12, 
                                            flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]
-        return flow_pred1, flow_pred2
+        return flow_pred1, flow_pred2, template_batch
         

@@ -21,6 +21,10 @@ DefaultExperiment: &defaults
     alternate_corr: False
     composed_flows: False
     beta_comp: 1.0
+    learn_temp: False
+    comp_photo: False
+    comp_temp: False
+    comp_spa: False
 
 GroupwiseFull:
     <<: *defaults
@@ -32,6 +36,49 @@ GroupwiseFull:
     add_normalisation: False
     model: 'group'
     train_or_test: 'train'
+#---------------------
+GroupwiseFull_LearnTemp_100spa:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_100spa'
+    max_seq_len: 19
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+    
+GroupwiseFull_LearnFlow_100spa_len4:
+    <<: *defaults
+    name: '4learn_param18'
+    max_seq_len: 4
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+
+GroupwiseFull_photoCFB:
+    <<: *defaults
+    name: 'GroupwiseFull_photoCFB2'
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+    comp_photo: True
+#--------------------
     
 GroupwiseFull_fwdbwdcomp_photo_spa_temp:
     <<: *defaults
@@ -167,17 +214,6 @@ GroupwiseFull_compFlow_1000spa:
     train_or_test: 'train'
     composed_flows: True
     
-GroupwiseFull_LearnFlow_100spa:
-    <<: *defaults
-    name: 'learnable_1-10-10'
-    beta_photo: 1
-    beta_spatial: 100.0
-    beta_temporal: 10.0
-    num_steps: 200
-    add_normalisation: False
-    model: 'group'
-    train_or_test: 'train'
-    composed_flows: False
 #------------------- END ------------------------
 GroupwiseFull200:
     <<: *defaults

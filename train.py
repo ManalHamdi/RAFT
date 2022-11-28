@@ -153,14 +153,12 @@ def train(args):
                 template_batch = None
             else:
                 image_batch, template_batch, patient_slice_id_batch = [x for x in data_blob] #[B,C,H,W] new [B,N,H,W], [B,N,H,W]
-                template_batch = seq_utils.TemplateFormer()(image_batch.float())
                 image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
             
             if config.add_noise:
                 stdv = np.random.uniform(0.0, 5.0)
                 image_batch = (image_batch + stdv * torch.randn(*image_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
                 template_batch = (template_batch + stdv * torch.randn(*template_batch.shape).to(cuda_to_use)).clamp(0.0, 255.0)
-            print("train.py", image_batch.shape)
             flow_predictions1, flow_predictions2, template_batch = model(image_batch, template_batch, iters=config.iters)
 
             # list of flow estimations with length iters, and each item of the list is [B, 2, H, W]   new [B, N, 2, H, W]  

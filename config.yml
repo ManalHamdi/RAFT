@@ -51,26 +51,13 @@ GroupwiseFull_LearnTemp_100spa:
     composed_flows: False
     learn_temp: True
     
-GroupwiseFull_LearnFlow_100spa_len4:
+GroupwiseFull_photoCFB_19:
     <<: *defaults
-    name: '4learn_param18'
-    max_seq_len: 4
+    name: 'GroupwiseFull_photoCFB_19'
     beta_photo: 1
     beta_spatial: 100.0
     beta_temporal: 10.0
-    num_steps: 200
-    add_normalisation: False
-    model: 'group'
-    train_or_test: 'train'
-    composed_flows: False
-    learn_temp: True
-
-GroupwiseFull_photoCFB:
-    <<: *defaults
-    name: 'GroupwiseFull_photoCFB2'
-    beta_photo: 1
-    beta_spatial: 100.0
-    beta_temporal: 10.0
+    max_seq_len: 19
     beta_comp: 1.0
     num_steps: 200
     add_normalisation: False
@@ -78,6 +65,37 @@ GroupwiseFull_photoCFB:
     train_or_test: 'train'
     composed_flows: True
     comp_photo: True
+GroupwiseFull_photoCFB_18:
+    <<: *defaults
+    name: 'GroupwiseFull_photoCFB_18'
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    max_seq_len: 18
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+    comp_photo: True
+    
+GroupwiseFull_photoCFB_spaCFB_tempCFB_18:
+    <<: *defaults
+    name: 'GroupwiseFull_photoCFB_spaCFB_tempCFB_18'
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    max_seq_len: 18
+    beta_comp: 1.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: True
+    comp_photo: True
+    comp_temp: True
+    comp_spa: True
 #--------------------
     
 GroupwiseFull_fwdbwdcomp_photo_spa_temp:
@@ -106,6 +124,19 @@ GroupwiseFull_fwdbwdcomp_photo_100spa_temp:
     train_or_test: 'train'
     composed_flows: True
 #------------------- Increasing weight of spa ------------------------
+GroupwiseFull_LearnFlow_100spa_len4:
+    <<: *defaults
+    name: '4learn_param18'
+    max_seq_len: 4
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
 GroupwiseFull_100comp_1000spa:
     <<: *defaults
     name: 'GroupwiseFull_100comp_1000spa'

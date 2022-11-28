@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH -J "learntemp"   # job name
+#SBATCH -J "allcomp"   # job name
 #SBATCH --mail-user=manal.hamdi@tum.de   # email address
 #SBATCH --mail-type=END  # send at the end
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
@@ -12,13 +12,13 @@
 # run your program here
 
 module load python/anaconda3
-conda activate temp
+conda activate raftnew
 conda info --envs
 
 #python3 -u train.py --experiment "GroupwiseFull_100spa" 
 #python3 -u train.py --experiment "GroupwiseFull_50spa" 
 #python3 -u train.py --experiment "GroupwiseFull_20spa" 
-python3 -u train.py --experiment "GroupwiseFull_LearnFlow_100spa_len4"
-#python -u train.py --experiment "GroupwiseFull_photoCFB"
+python3 -u train.py --experiment "GroupwiseFull_photoCFB_spaCFB_tempCFB_18"
+#python -u train.py --experiment "GroupwiseFull_photoCFB_18"
  
 #python -u train.py --experiment "GroupwiseFull_LearnTemp_100spa"

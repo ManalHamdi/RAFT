@@ -37,6 +37,34 @@ GroupwiseFull:
     model: 'group'
     train_or_test: 'train'
 #---------------------
+GroupwiseFull_LearnTemp_100spa_setting3_18:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_100spa_setting3_18'
+    max_seq_len: 18
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+    
+GroupwiseFull_LearnTemp_100spa_avgFalse:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_100spa_avgFalse'
+    max_seq_len: 19
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+    
 GroupwiseFull_LearnTemp_100spa:
     <<: *defaults
     name: 'GroupwiseFull_LearnTemp_100spa'
@@ -248,7 +276,7 @@ GroupwiseFull_compFlow_1000spa:
 #------------------- END ------------------------
 GroupwiseFull200:
     <<: *defaults
-    name: 'GroupwiseFull200_learn'
+    name: 'GroupwiseFull200_232'
     beta_photo: 1
     beta_spatial: 10.0
     beta_temporal: 10.0

@@ -22,6 +22,7 @@ from raft import RAFT
 import evaluate
 import datasets
 import core.sequence_handling_utils as seq_utils
+from torchsummary import summary
 
 try:
     from torch.cuda.amp import GradScaler
@@ -104,7 +105,8 @@ def train(args):
     
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
-    
+    print(summary(model, (1, 19, 256, 216)))
+
     epoch = 0
     last_epoch = config.num_steps - 1
     

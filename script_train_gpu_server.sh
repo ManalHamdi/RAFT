@@ -1,5 +1,5 @@
 #!/bin/sh
-#SBATCH -J "allcomp"   # job name
+#SBATCH -J "learn3"   # job name
 #SBATCH --mail-user=manal.hamdi@tum.de   # email address
 #SBATCH --mail-type=END  # send at the end
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:1  # gpus if needed
 #SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/output2.out
 #SBATCH --error=/home/guests/manal_hamdi/manal/TGRAFT/output_files/error2.err  
-#SBATCH --nodelist=c1-head
+##SBATCH --nodelist=c1-head
 
 # run your program here
 
@@ -18,7 +18,7 @@ conda info --envs
 #python3 -u train.py --experiment "GroupwiseFull_100spa" 
 #python3 -u train.py --experiment "GroupwiseFull_50spa" 
 #python3 -u train.py --experiment "GroupwiseFull_20spa" 
-python3 -u train.py --experiment "GroupwiseFull_photoCFB_spaCFB_tempCFB_18"
+python3 -u train.py --experiment "GroupwiseFull200"
 #python -u train.py --experiment "GroupwiseFull_photoCFB_18"
  
 #python -u train.py --experiment "GroupwiseFull_LearnTemp_100spa"

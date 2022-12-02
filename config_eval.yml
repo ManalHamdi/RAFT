@@ -14,6 +14,7 @@ Eval: &eval_defaults
     train_or_test: 'test'
     dropout: 0.0
     iters: 2
+    learn_temp: False
 
 Eval25_19config_IntraGroupwise_200: &intra_groupwise_defaults
     <<: *eval_defaults
@@ -21,8 +22,29 @@ Eval25_19config_IntraGroupwise_200: &intra_groupwise_defaults
     model: 'group'
     max_seq_len: 25
 #----------------------------------------------------------------------------------------    
-#----------------------------------------------------------------------------------------    
-#----------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------   
+Eval25_18GroupwiseFull_photoCFB_spaCFB_tempCFB_198:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_photoCFB_spaCFB_tempCFB_18"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_photoCFB_spaCFB_tempCFB_18/GroupwiseFull_photoCFB_spaCFB_tempCFB_18_198.pth"
+Eval25_18GroupwiseFull_photoCFB_198:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_photoCFB_spaCFB_tempCFB_18"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_photoCFB_18/GroupwiseFull_photoCFB_18_198.pth"
+#----------------------------------------------------------------------------------------   
+#----------------------------------------------------------------------------------------  
+Eval25_18GroupwiseFull_photoCFB_spaCFB_tempCFB_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_photoCFB_spaCFB_tempCFB_18"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_photoCFB_spaCFB_tempCFB_18/GroupwiseFull_photoCFB_spaCFB_tempCFB_18_108.pth"
+
+Eval25_18GroupwiseFull_photoCFB_108:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_photoCFB_spaCFB_tempCFB_18"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_photoCFB_18/GroupwiseFull_photoCFB_18_108.pth"
+    
+    
+#----------------------------------------------------------------------------------------   
 #----------------------------------------------------------------------------------------   
 Eval25_19config_GroupwiseFull_photocomp_108:
     <<: *intra_groupwise_defaults

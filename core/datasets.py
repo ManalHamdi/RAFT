@@ -93,7 +93,7 @@ class ACDCDataset(data.Dataset):
         if (self.args.model == 'group'):
             seq2 = seq_utils.generate_template(seq_tensor, "avg") # tensor [H, W]
             seq2 = seq2.repeat(seq_length, 1, 1)
-        elif (self.model == 'pair'):
+        elif (self.args.model == 'pair'):
             idx_rnd = torch.randperm(seq_length)
             seq2 = torch.zeros_like(seq_tensor)
             for i in range(0, seq_length):

@@ -15,6 +15,7 @@ class Experiment:
         self.model = config_dict["model"]
         self.dropout = config_dict["dropout"]
         self.dataset = config_dict["dataset"]
+        self.learn_temp = config_dict["learn_temp"]
         if (config_dict['train_or_test'] == 'train'):
             self.stage = config_dict["stage"]
             self.validation = config_dict["validation"]
@@ -31,7 +32,6 @@ class Experiment:
             self.beta_temporal = config_dict["beta_temporal"]
             self.composed_flows = config_dict["composed_flows"]
             self.beta_comp = config_dict["beta_comp"]
-            self.learn_temp = config_dict["learn_temp"]
             self.comp_photo = config_dict["comp_photo"]
             self.comp_spa = config_dict["comp_spa"]
             self.comp_temp = config_dict["comp_temp"]

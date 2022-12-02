@@ -235,12 +235,12 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
         seq_len, h, w = seq_original.shape
         
         for frame_id in range(0, seq_len): # Flow frame_id -> i:  1-1 1-2 1-3 / 2-1 2-2 2-3 /
-            
+            '''
             if (frame_id % 5 != 0):
                 continue
-            
+            '''
             seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
-            flow_pred_fwd, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
+            flow_pred_fwd, _, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
                                      iters=args.iters, test_mode=True)
             seq_pred = seq_utils.warp_batch(seq1[None].to(cuda_to_use), flow_pred_fwd[args.iters-1], gpu=args.gpus[0])
             for i in range(0, seq_len):
@@ -276,18 +276,23 @@ def compute_avg_pair_error_group(model, test_dataset, args):
     idx_log_1 = [0, 6, 13]
     cuda_to_use = "cuda:" + str(args.gpus[0])
     for seq_id in range(0, len(test_dataset)):
-        seq, tmp_seq, patient_name = test_dataset[seq_id]
+        if (args.learn_temp):
+            seq, patient_name = test_dataset[seq_id]
+            tmp_seq = None
+        else:
+            seq, tmp_seq, patient_name = test_dataset[seq_id]
+            
         seq_len, h, w = seq.shape
-        flow_pred_fwd, flow_pred_bwd = model(seq[None].to(cuda_to_use), tmp_seq[None].to(cuda_to_use), 
+        flow_pred_fwd, flow_pred_bwd, tmp_seq = model(seq[None].to(cuda_to_use), tmp_seq[None].to(cuda_to_use), 
                                              iters=args.iters, test_mode=True)
         if (patient_name == 'patient113_z_3' or patient_name == 'patient102_z_1' or patient_name == 'patient123_z_3'):
             patient_log = True
         
         for im1_id in range(0, seq_len):
-            
+            '''
             if (im1_id % 5 != 0):
                 continue
-            
+            '''
             # Construct a seq with frame im1_id repeated
             im1 = seq[im1_id,:,:][None].to(cuda_to_use)
             for im2_id in range(0, seq_len): # Flow im1_id -> im2_id
@@ -340,8 +345,8 @@ def evaluate_acdc_test(args):
     model.eval()
     mode = 'testing'
     cuda_to_use = "cuda:" + str(args.gpus[0])
-    
-    test_dataset = datasets.ACDCDataset(args.dataset_folder, 'testing', args.max_seq_len, args.model, args.add_normalisation)
+
+    test_dataset = datasets.ACDCDataset(args, 'testing')
     assert args.model == 'group' or args.model == 'pair'
     if (args.model == 'pair'):
         avg_pair_err = compute_avg_pair_error_pair(model, test_dataset, args)

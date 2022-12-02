@@ -105,7 +105,6 @@ def train(args):
     
     model = nn.DataParallel(RAFT(args), device_ids=args.gpus)
     print("Parameter Count: %d" % count_parameters(model))
-    print(summary(model, (1, 19, 256, 216)))
 
     epoch = 0
     last_epoch = config.num_steps - 1

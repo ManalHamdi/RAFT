@@ -235,10 +235,10 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
         seq_len, h, w = seq_original.shape
         
         for frame_id in range(0, seq_len): # Flow frame_id -> i:  1-1 1-2 1-3 / 2-1 2-2 2-3 /
-            '''
+
             if (frame_id % 5 != 0):
                 continue
-            '''
+                
             seq1 = seq_original[frame_id,:,:].repeat(seq_len, 1, 1)
             flow_pred_fwd, _, _ = model(seq1[None].to(cuda_to_use), seq_original[None].to(cuda_to_use), 
                                      iters=args.iters, test_mode=True)
@@ -289,10 +289,10 @@ def compute_avg_pair_error_group(model, test_dataset, args):
             patient_log = True
         
         for im1_id in range(0, seq_len):
-            '''
+
             if (im1_id % 5 != 0):
                 continue
-            '''
+
             # Construct a seq with frame im1_id repeated
             im1 = seq[im1_id,:,:][None].to(cuda_to_use)
             for im2_id in range(0, seq_len): # Flow im1_id -> im2_id

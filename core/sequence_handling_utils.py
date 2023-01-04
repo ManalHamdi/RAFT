@@ -117,7 +117,7 @@ def warp_batch(batch_seq, batch_flo, gpu=0):
     return warped_batch
 
 class TemplateFormer(nn.Module):
-    def __init__(self, ch_num=[128, 64, 32, 1], circular=3, average_init=False):
+    def __init__(self, ch_num=[64, 32, 1], circular=3, average_init=True):
         super(TemplateFormer, self).__init__()
         self.conv1 = nn.Conv1d(1, 1, (3, 1, 1), 1, 1)
         layers = []
@@ -128,9 +128,13 @@ class TemplateFormer(nn.Module):
                 torch.nn.init.constant_(conv.weight, 1/(circular*2+1))
             layers.append(conv)
             if i == len(ch_num) - 2:
+                layers = layers[:-1]
                 break
         self.seq = nn.Sequential(*layers)
+        
 
     def forward(self, x):
-        x = self.seq(x[:,None,...])
-        return x[:,0,...]
+        x = self.seq(x[:, None, ...]).mean(dim=2, keepdim=True)
+        return x[:, 0, ...]
+        x = self.seq(x[:, None, ...])
+        return x[:, 0, ...]

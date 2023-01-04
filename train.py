@@ -22,7 +22,6 @@ from raft import RAFT
 import evaluate
 import datasets
 import core.sequence_handling_utils as seq_utils
-from torchsummary import summary
 
 try:
     from torch.cuda.amp import GradScaler

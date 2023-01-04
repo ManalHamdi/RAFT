@@ -151,10 +151,15 @@ class RAFT(nn.Module):
             Returns list of flow estimations with length iters, and each item of the list is [B, N, 2, H, W]// [B, 2, H, W]
         """
         template_model = nn.DataParallel(seq_utils.TemplateFormer(), device_ids=self.args.gpus)
+        b, n, h, w = image_batch.shape
         if (self.args.learn_temp):
             template_batch = template_model(image_batch.float())
+            print(template_batch.shape)
+            template_batch = template_batch.repeat(1,n, 1, 1)
+            print(template_batch.shape)
             cuda_to_use = "cuda:" + str(self.args.gpus[0])
             image_batch, template_batch = image_batch.to(cuda_to_use), template_batch.to(cuda_to_use)
+            
             
         flow_pred1 = self.predict_flow(image_batch, template_batch, iters=12, 
                                        flow_init=None, upsample=True, test_mode=False) #[B, N, 2, H, W]

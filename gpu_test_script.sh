@@ -27,8 +27,8 @@ conda activate raftnew
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_398"
 #python3 evaluate.py --experiment "Eval25_19config_PairwiseFwd400"
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198"
-#python3 evaluate.py --experiment "Eval25_18GroupwiseFull_photoCFB_spaCFB_tempCFB_198"
-python3 evaluate.py --experiment "Eval25_18GroupwiseFull_photoCFB_198"
+python3 evaluate.py --experiment "Eval25_18GroupwiseFull_photoCFB_spaCFB_tempCFB_198"
+#python3 evaluate.py --experiment "Eval25_18GroupwiseFull_photoCFB_198"
 
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_100spa_198"
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198"

@@ -15,6 +15,9 @@ module load python/anaconda3
 conda deactivate
 conda activate raftnew
 
+python3 evaluate.py --experiment 'Eval25_19config_GroupwiseFull_200' 
+#python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198"
+#python3 evaluate.py --experiment "Eval25_19config_PairwiseFwd198"
 
 #python3 evaluate.py --experiment 'Eval_config_19_GroupwiseFull_198' 
 
@@ -26,7 +29,7 @@ conda activate raftnew
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_398"
 #python3 evaluate.py --experiment "Eval25_19config_PairwiseFwd400"
 
-python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198_far"
+#python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198_far"
 #python3 evaluate.py --experiment "Eval25_19config_PairwiseFwd198_far"
 
 
@@ -35,3 +38,5 @@ python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_100spa_198"
 #python3 evaluate.py --experiment "Eval25_19config_GroupwiseFull_compFlow_100spa_198"
 #python3 evaluate.py --experiment "Eval25_19config_PairwiseFwd198"
+
+

@@ -214,10 +214,15 @@ def log_test(im1, im2, im2_p, err, flow, patient_name, img1_idx, img2_idx):
     
     log_name = "Consecutive Frames " + patient_name + " from "+ str(img1_idx) + " to " + str(img2_idx)
     
+    l1_loss_none = torch.nn.L1Loss(reduction='none')
+    orig_err = l1_loss_none(im1, im2)
+    corr_err = l1_loss_none(im2, im_p)
+        
     wandb.log({log_name: [wandb.Image(im1, caption=patient_name + " Image"+str(img1_idx)), 
                          wandb.Image(im2, caption=patient_name + " Image"+str(img2_idx)),
                          wandb.Image(im2_p, caption=patient_name + " Image"+str(img2_idx)+" predicted"),
-                         wandb.Image(err, caption=patient_name + " Error"+str(img2_idx)+" "+str(img2_idx)+"'"),
+                         wandb.Image(orig_err, caption=patient_name + " Original Error"+str(img1_idx)+" "+str(img2_idx)+"'"),
+                         wandb.Image(corr_err, caption=patient_name + " Corrected Error"+str(img2_idx)+" "+str(img2_idx)+"'"),
                          wandb.Image(flow, caption=patient_name + " Flow"+str(img1_idx)+"->"+str(img2_idx))]})
     
 @torch.no_grad()
@@ -225,7 +230,7 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
     avg_pair_err, pair_count, sim, psnr = 0, 0, 0, 0
     patient_log = False
     
-    idx_log_1 = [0, 6, 13]
+    idx_log_1 = [0, 5, 10]
     l1_loss = torch.nn.L1Loss()
     
     for seq_id in range(0, len(test_dataset)):
@@ -249,22 +254,25 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
                 if (i != frame_id):
                     continue
                 '''
+                '''
                 if (i != (frame_id+15)%seq_len):
                     continue
+                '''
                 l1_loss_none = torch.nn.L1Loss(reduction='none')
                 err = l1_loss_none(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 avg_pair_err += l1_loss(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
-                sim += ssim(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:]) 
-                psnr += cv2.PSNR(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
+                sim += ssim(seq_original[i,:,:].to(cuda_to_use).detach().numpy(), seq_pred[0,i,:,:].detach().numpy()) 
+                psnr += cv2.PSNR(seq_original[i,:,:].to(cuda_to_use).detach().numpy(), seq_pred[0,i,:,:].detach().numpy())
+                
                 pair_count += 1
-                '''
+                
                 can_log = frame_id in idx_log_1 and patient_log
                 # Flow 0 -> 1 Flow 6 -> 7 Flow 13 -> 14
                 log_consc = can_log and i == frame_id+1
                 # Flow 0 -> 4 Flow 6 -> 14 Flow 13 -> 5
-                log_none_consc = can_log and ((frame_id == 0 and i == 4) 
-                                           or (frame_id == 6 and i == 14) 
-                                           or (frame_id == 13 and i == 5))
+                log_none_consc = can_log and ((frame_id == 0 and i == 5) 
+                                           or (frame_id == 5 and i == 14) 
+                                           or (frame_id == 10 and i == 13))
                 if (log_consc or log_none_consc): # Log consecutive or none consec
                     log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[0, i,:,:], 
                              err, flow_pred_fwd[args.iters-1][0,i,:,:,:], patient_name, frame_id, i) # Flow frame_id -> i
@@ -272,6 +280,7 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
                 if (patient_log):
                     log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[0, i,:,:], 
                              err, flow_pred_fwd[args.iters-1][0,i,:,:,:], patient_name, frame_id, i) # Flow frame_id -> i
+                '''
         patient_log = False
     avg_pair_err /= pair_count
     sim /= pair_count
@@ -283,7 +292,7 @@ def compute_avg_pair_error_group(model, test_dataset, args):
     avg_pair_err, pair_count, sim, psnr = 0, 0, 0, 0
     l1_loss = torch.nn.L1Loss()
     patient_log = False
-    idx_log_1 = [0, 6, 13]
+    idx_log_1 = [0, 5, 10]
     cuda_to_use = "cuda:" + str(args.gpus[0])
     for seq_id in range(0, len(test_dataset)):
         if (args.learn_temp):
@@ -310,9 +319,10 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 if (im1_id != im2_id):
                     continue
                 '''
+                ''' Uncomment to compute error with large motion (distance 15 frames)
                 if (im2_id != (im1_id+15)%seq_len):
                     continue
-                    
+                ''' 
                 flow1_tmp = flow_pred_fwd[args.iters-1][0,im1_id,:,:,:]
                 temp_p = seq_utils.warp_seq(im1, flow1_tmp.repeat(1,1,1,1), gpu=args.gpus[0]) 
                 
@@ -327,15 +337,15 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 err = l1_loss_none(im2, im2_p)
                 
                 avg_pair_err += l1_loss(im2, im2_p)
-                sim += ssim(im2, im2_p) 
-                psnr += cv2.PSNR(im2, im2_p)
+                sim += ssim(im2[0,:,:].cpu().detach().numpy(), im2_p[0,:,:].cpu().detach().numpy()) 
+                psnr += cv2.PSNR(im2[0,:,:].cpu().detach().numpy(), im2_p[0,:,:].cpu().detach().numpy())
                 pair_count += 1
-                '''
+                
                 can_log = im1_id in idx_log_1 and patient_log
                 log_consc = can_log and im2_id == im1_id+1
-                log_none_consc = can_log and ((im1_id == 0 and im2_id == 4)
-                                              or (im1_id == 6 and im2_id == 14)
-                                              or (im1_id == 13 and im2_id == 5))
+                log_none_consc = can_log and ((im1_id == 0 and im2_id == 5)
+                                              or (im1_id == 5 and im2_id == 14)
+                                              or (im1_id == 10 and im2_id == 13))
                 if (log_consc or log_none_consc):
                     flow1_2 = flow1_tmp+flow2
                     log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
@@ -343,6 +353,7 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 if (patient_log):
                     flow1_2 = flow1_tmp+flow2
                     log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
+                '''
         patient_log = False
     avg_pair_err /= pair_count
     sim /= pair_count

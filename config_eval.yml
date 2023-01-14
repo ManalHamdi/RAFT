@@ -110,7 +110,18 @@ Eval25_19config_GroupwiseFull_compFlow_100spa_198:
     <<: *intra_groupwise_defaults
     name: "GroupwiseFull_compFlow_100spa_198"
     restore_ckpt: "october_checkpoints/GroupwiseFull_compFlow_100spa/GroupwiseFull_compFlow_100spa_198.pth"
+Eval25_19config_GroupwiseFull_compFlow_100spa_198_far:
+    <<: *intra_groupwise_defaults
+    name: "GroupwiseFull_compFlow_100spa_198"
+    restore_ckpt: "october_checkpoints/GroupwiseFull_compFlow_100spa/GroupwiseFull_compFlow_100spa_198.pth"
 Eval25_19config_PairwiseFwd198:
+    <<: *eval_defaults
+    add_normalisation: False
+    model: 'pair'
+    max_seq_len: 25
+    name: "PairwiseFull"
+    restore_ckpt: "october_checkpoints/PairwiseFull/PairwiseFull_198.pth"
+Eval25_19config_PairwiseFwd198_far:
     <<: *eval_defaults
     add_normalisation: False
     model: 'pair'

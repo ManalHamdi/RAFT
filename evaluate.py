@@ -19,7 +19,8 @@ from utils import frame_utils
 import core.sequence_handling_utils as seq_utils
 import yaml
 import experiment
-
+from skimage.metrics import structural_similarity as ssim
+import cv2
 from raft import RAFT
 from utils.utils import InputPadder, forward_interpolate
 
@@ -221,7 +222,7 @@ def log_test(im1, im2, im2_p, err, flow, patient_name, img1_idx, img2_idx):
     
 @torch.no_grad()
 def compute_avg_pair_error_pair(model, test_dataset, args):
-    avg_pair_err, pair_count = 0, 0
+    avg_pair_err, pair_count, sim, psnr = 0, 0, 0, 0
     patient_log = False
     
     idx_log_1 = [0, 6, 13]
@@ -248,11 +249,15 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
                 if (i != frame_id):
                     continue
                 '''
+                if (i != (frame_id+15)%seq_len):
+                    continue
                 l1_loss_none = torch.nn.L1Loss(reduction='none')
                 err = l1_loss_none(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 avg_pair_err += l1_loss(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
+                sim += ssim(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:]) 
+                psnr += cv2.PSNR(seq_original[i,:,:].to(cuda_to_use), seq_pred[0,i,:,:])
                 pair_count += 1
-                
+                '''
                 can_log = frame_id in idx_log_1 and patient_log
                 # Flow 0 -> 1 Flow 6 -> 7 Flow 13 -> 14
                 log_consc = can_log and i == frame_id+1
@@ -263,14 +268,19 @@ def compute_avg_pair_error_pair(model, test_dataset, args):
                 if (log_consc or log_none_consc): # Log consecutive or none consec
                     log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[0, i,:,:], 
                              err, flow_pred_fwd[args.iters-1][0,i,:,:,:], patient_name, frame_id, i) # Flow frame_id -> i
-                                    
+                '''
+                if (patient_log):
+                    log_test(seq1[i,:,:], seq_original[i,:,:], seq_pred[0, i,:,:], 
+                             err, flow_pred_fwd[args.iters-1][0,i,:,:,:], patient_name, frame_id, i) # Flow frame_id -> i
         patient_log = False
     avg_pair_err /= pair_count
-    return avg_pair_err
+    sim /= pair_count
+    psnr /= pair_count
+    return avg_pair_err, sim, psnr
 
 @torch.no_grad()
 def compute_avg_pair_error_group(model, test_dataset, args):
-    avg_pair_err, pair_count = 0, 0
+    avg_pair_err, pair_count, sim, psnr = 0, 0, 0, 0
     l1_loss = torch.nn.L1Loss()
     patient_log = False
     idx_log_1 = [0, 6, 13]
@@ -300,6 +310,9 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 if (im1_id != im2_id):
                     continue
                 '''
+                if (im2_id != (im1_id+15)%seq_len):
+                    continue
+                    
                 flow1_tmp = flow_pred_fwd[args.iters-1][0,im1_id,:,:,:]
                 temp_p = seq_utils.warp_seq(im1, flow1_tmp.repeat(1,1,1,1), gpu=args.gpus[0]) 
                 
@@ -314,8 +327,10 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 err = l1_loss_none(im2, im2_p)
                 
                 avg_pair_err += l1_loss(im2, im2_p)
+                sim += ssim(im2, im2_p) 
+                psnr += cv2.PSNR(im2, im2_p)
                 pair_count += 1
-                
+                '''
                 can_log = im1_id in idx_log_1 and patient_log
                 log_consc = can_log and im2_id == im1_id+1
                 log_none_consc = can_log and ((im1_id == 0 and im2_id == 4)
@@ -324,10 +339,15 @@ def compute_avg_pair_error_group(model, test_dataset, args):
                 if (log_consc or log_none_consc):
                     flow1_2 = flow1_tmp+flow2
                     log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
-                    
+                '''
+                if (patient_log):
+                    flow1_2 = flow1_tmp+flow2
+                    log_test(im1, im2, im2_p, err, flow1_2[0,:,:,:], patient_name, im1_id, im2_id)
         patient_log = False
     avg_pair_err /= pair_count
-    return avg_pair_err
+    sim /= pair_count
+    psnr /= pair_count
+    return avg_pair_err, sim, psnr
 
 @torch.no_grad()
 def evaluate_acdc_test(args):
@@ -349,11 +369,13 @@ def evaluate_acdc_test(args):
     test_dataset = datasets.ACDCDataset(args, 'testing')
     assert args.model == 'group' or args.model == 'pair'
     if (args.model == 'pair'):
-        avg_pair_err = compute_avg_pair_error_pair(model, test_dataset, args)
+        avg_pair_err, sim, psnr = compute_avg_pair_error_pair(model, test_dataset, args)
     elif(args.model == 'group'):
-        avg_pair_err = compute_avg_pair_error_group(model, test_dataset, args)
+        avg_pair_err, sim, psnr = compute_avg_pair_error_group(model, test_dataset, args)
 
     wandb.log({"Average pair error": avg_pair_err})
+    wandb.log({"Average ssim error": sim})
+    wandb.log({"Average psnr error": psnr})
             
 @torch.no_grad()
 def test_acdc(args):

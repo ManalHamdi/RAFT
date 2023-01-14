@@ -117,9 +117,10 @@ def warp_batch(batch_seq, batch_flo, gpu=0):
     return warped_batch
 
 class TemplateFormer(nn.Module):
-    def __init__(self, ch_num=[64, 32, 1], circular=3, average_init=True):
+    def __init__(self, ch_num=[64, 32, 1], seq_group=18, circular=3, average_init=True):
         super(TemplateFormer, self).__init__()
         self.conv1 = nn.Conv1d(1, 1, (3, 1, 1), 1, 1)
+        self.seq_group = seq_group
         layers = []
         ch_num = [1] + ch_num
         for i, ch in enumerate(ch_num):
@@ -127,14 +128,28 @@ class TemplateFormer(nn.Module):
             if average_init:
                 torch.nn.init.constant_(conv.weight, 1/(circular*2+1))
             layers.append(conv)
+            layers.append(nn.ReLU())
             if i == len(ch_num) - 2:
-                layers = layers[:-1]
+                # layers = layers[:-1]
                 break
         self.seq = nn.Sequential(*layers)
-        
+        self.linear = nn.Linear(seq_group, 1)
+        if average_init:
+            torch.nn.init.constant_(self.linear.weight, 1/seq_group)
+
+    def form_seq_group(self, x):
+        seq_len = x.shape[1]
+        node = [int(np.ceil(i*seq_len/self.seq_group)) for i in range(self.seq_group)]
+        group = []
+        for i in range(len(node)-1):
+            group.append(x[:, node[i]:node[i+1], ...].mean(dim=1, keepdim=True))
+            if i == len(node)-2:
+                group.append(x[:, node[i+1]:, ...])
+        return torch.cat(group, dim=1)
 
     def forward(self, x):
-        x = self.seq(x[:, None, ...]).mean(dim=2, keepdim=True)
-        return x[:, 0, ...]
-        x = self.seq(x[:, None, ...])
-        return x[:, 0, ...]
+        group = self.form_seq_group(x)
+        group = self.seq(group[:, None, ...])
+        group = nn.ReLU()(self.linear(group[0].permute(0, 2, 3, 1)).permute(0, 3, 1, 2))
+
+        return group/group.max()*255

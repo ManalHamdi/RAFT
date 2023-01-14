@@ -63,9 +63,93 @@ GroupwiseFull_LearnTemp_100spa_setting3_17:
     train_or_test: 'train'
     composed_flows: False
     learn_temp: True
-GroupwiseFull_LearnTemp_100spa_setting3_mean_18:
+GroupwiseFull_LearnTemp_default:
     <<: *defaults
-    name: 'GroupwiseFull_LearnTemp_100spa_setting3_mean_18'
+    name: 'GroupwiseFull_LearnTemp_default'
+    max_seq_len: 10
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+
+GroupwiseFull_LearnTemp_default_15:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_default_15'
+    max_seq_len: 15
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+    
+GroupwiseFull_LearnTemp_default_17:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_default_17'
+    max_seq_len: 17
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+
+GroupwiseFull_LearnTemp_setting2_10:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_setting2_10'
+    max_seq_len: 10
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+    
+GroupwiseFull_LearnTemp_setting3_15:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_setting3_15'
+    max_seq_len: 15
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+    
+GroupwiseFull_LearnTemp_avgFalse:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_avgFalse'
+    max_seq_len: 15
+    beta_photo: 1
+    beta_spatial: 100.0
+    beta_temporal: 10.0
+    num_steps: 200
+    add_normalisation: False
+    model: 'group'
+    train_or_test: 'train'
+    composed_flows: False
+    learn_temp: True
+
+GroupwiseFull_LearnTemp_default_18:
+    <<: *defaults
+    name: 'GroupwiseFull_LearnTemp_default_18'
     max_seq_len: 18
     beta_photo: 1
     beta_spatial: 100.0

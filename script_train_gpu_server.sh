@@ -5,8 +5,8 @@
 #SBATCH --ntasks=4   # number of processor cores (i.e. tasks)
 #SBATCH --nodes=1   # number of nodes
 #SBATCH --gres=gpu:1  # gpus if needed
-#SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/output2.out
-#SBATCH --error=/home/guests/manal_hamdi/manal/TGRAFT/output_files/error2.err  
+#SBATCH --output=/home/guests/manal_hamdi/manal/TGRAFT/output_files/output3.out
+#SBATCH --error=/home/guests/manal_hamdi/manal/TGRAFT/output_files/error3.rr  
 ##SBATCH --nodelist=c1-head
 
 # run your program here
@@ -19,6 +19,7 @@ conda info --envs
 #python3 -u train.py --experiment "GroupwiseFull_50spa" 
 #python3 -u train.py --experiment "GroupwiseFull_20spa" 
 #python3 -u train.py --experiment "GroupwiseFull_LearnTemp_100spa_mean_default"
-python -u train.py --experiment "GroupwiseFull_LearnTemp_100spa_mean_default"
+#python -u train.py --experiment "GroupwiseFull_LearnTemp_default_17"
+python -u train.py --experiment "GroupwiseFull_LearnTemp_setting3_15"
  
 #python -u train.py --experiment "GroupwiseFull_LearnTemp_100spa"
